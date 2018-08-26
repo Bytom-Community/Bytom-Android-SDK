@@ -17,6 +17,8 @@
 package com.io.wallet.crypto;
 
 import com.google.crypto.tink.annotations.Alpha;
+import com.google.crypto.tink.subtle.Hex;
+
 import java.security.InvalidKeyException;
 import java.util.Arrays;
 
