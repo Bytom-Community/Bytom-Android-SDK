@@ -1,9 +1,10 @@
 .gradle
-.local.properties
+local.properties
 .idea/
 .DS_Store
 /build
 /captures
-.externalNativeBuild
-.gradle.properties
+gradle.properties
+gradlew
+gradlew.bat
 
