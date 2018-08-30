@@ -11,6 +11,8 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import static com.io.wallet.bean.Keys.extendedPublicKeySize;
+
 public class StringUtils {
     public static String rfc3339DateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
     public static final Gson serializer = new GsonBuilder().setDateFormat(rfc3339DateFormat).create();
@@ -102,5 +104,11 @@ public class StringUtils {
 
     public static String keyFileName(String id) {
         return "UTC--" + getISO8601Timestamp(new Date()) + "--" + id;
+    }
+
+    public static String getUnmarshalText(String key) throws Exception {
+        if (key.length() != 2 * extendedPublicKeySize)
+            throw new Exception("bad key length");
+        return key;
     }
 }

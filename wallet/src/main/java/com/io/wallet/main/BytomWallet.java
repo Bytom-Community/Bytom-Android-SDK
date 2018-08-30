@@ -1,5 +1,8 @@
 package com.io.wallet.main;
 
+import android.content.Context;
+
+import com.io.wallet.bean.Account;
 import com.io.wallet.bean.Constant;
 import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.Respon;
@@ -9,6 +12,7 @@ import com.io.wallet.crypto.Wallet;
 import com.io.wallet.utils.StringUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.io.wallet.crypto.Wallet.KEY_TYPE;
@@ -19,8 +23,8 @@ import static com.io.wallet.crypto.Wallet.KEY_TYPE;
 
 public class BytomWallet {
 
-    public static void initWallet(String storagePath) {
-        Storage.getInstance().init(storagePath);
+    public static void initWallet(Context context, String storagePath) {
+        Storage.getInstance().init(context, storagePath);
     }
 
     /**
@@ -56,14 +60,29 @@ public class BytomWallet {
         List keys;
         try {
             keys = Storage.getInstance().loadKeys();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
         }
         return new Respon(Constant.SUCCESS, keys).toJson();
     }
 
-    public String createAccount(String alias, int quorum, String rootXPub) {
-        return "";
+    /**
+     * create acount
+     *
+     * @param alias
+     * @param quorum
+     * @param rootXPub
+     * @return
+     */
+    public static String createAccount(String alias, int quorum, String rootXPub) {
+        Account account;
+        try {
+            account = Wallet.creatAcount(Arrays.asList(StringUtils.getUnmarshalText(rootXPub)), quorum, alias);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new Respon(Constant.FAIL, e.getMessage()).toJson();
+        }
+        return new Respon(Constant.SUCCESS, account).toJson();
     }
 }

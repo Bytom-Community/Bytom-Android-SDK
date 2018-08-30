@@ -8,6 +8,7 @@ import android.os.Environment;
 
 import com.io.wallet.bean.WalletFile;
 import com.io.wallet.bean.Xpub;
+import com.io.wallet.utils.SpUtil;
 import com.io.wallet.utils.StoragePermission;
 
 import java.io.BufferedInputStream;
@@ -45,8 +46,9 @@ public class Storage {
         }
     }
 
-    public void init(String path) {
+    public void init(Context context,String path) {
         this.KEYS_PATH = path;
+        SpUtil.init(context);
     }
 
     public synchronized boolean add(WalletFile wallet) {
@@ -202,7 +204,7 @@ public class Storage {
         fout.close();
     }
 
-    public List<Xpub> loadKeys() throws IOException {
+    public List<Xpub> loadKeys() throws Exception {
         List<Xpub> list = new ArrayList<>();
         File baseFile = new File(KEYS_PATH);
         if (baseFile.isFile() || !baseFile.exists()) {

@@ -5,6 +5,7 @@ import com.io.wallet.utils.StringUtils;
 public class Keys {
     public static final int PRIVATE_KEY_SIZE = 32;
     public static final int PUBLIC_KEY_SIZE = 64;
+    public static final int extendedPublicKeySize = 64;
     public static final String PATH = "/key/";
 
     private String ID;
