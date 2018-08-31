@@ -2,12 +2,16 @@ package com.io.wallet.crypto;
 
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.io.wallet.bean.Account;
 import com.io.wallet.bean.Crypto;
+import com.io.wallet.bean.CtrlProgram;
 import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.ScryptKdfParams;
 import com.io.wallet.bean.WalletFile;
 import com.io.wallet.main.Storage;
+import com.io.wallet.utils.Constant;
 import com.io.wallet.utils.SpUtil;
 import com.io.wallet.utils.StringUtils;
 import com.lambdaworks.crypto.SCrypt;
@@ -16,14 +20,20 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import static com.io.wallet.utils.Constant.ACCOUNTS_JSON;
+import static com.io.wallet.utils.StringUtils.jsonToJsonObject;
 
 /**
  * Created by hwj on 2018/8/24.
@@ -31,25 +41,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class Wallet {
 
-    private static final int N_LIGHT = 1 << 12;
-    private static final int P_LIGHT = 6;
-
-    private static final int N_STANDARD = 1 << 18;
-    private static final int P_STANDARD = 1;
-    private static final int R = 8;
-    private static final int DKLEN = 32;
-
-    public static final String CIPHER = "aes-128-ctr";
-    public static final String AES_128_CTR = "pbkdf2";
-    public static final String SCRYPT = "scrypt";
-
-    private static final int CURRENT_VERSION = 1;
-    public static final String KEY_TYPE = "bytom_kd";
-
     public static String create(String password, Keys keyPair, int n, int p) throws Exception {
         byte[] salt = generateRandomBytes(32);
         byte[] derivedKey = generateDerivedScryptKey(
-                password.getBytes(Charset.forName("UTF-8")), salt, n, R, p, DKLEN);
+                password.getBytes(Charset.forName("UTF-8")), salt, n, Constant.R, p, Constant.DKLEN);
         byte[] encryptKey = Arrays.copyOfRange(derivedKey, 0, 16);
         byte[] iv = generateRandomBytes(16);
         byte[] privateKeyBytes = keyPair.getXPrv().getBytes();
@@ -68,19 +63,19 @@ public class Wallet {
         WalletFile walletFile = new WalletFile();
 
         Crypto crypto = new Crypto();
-        crypto.setCipher(CIPHER);
+        crypto.setCipher(Constant.CIPHER);
         crypto.setCiphertext(StringUtils.toHexStringNoPrefix(cipherText));
 
         Crypto.CipherParams cipherParams = new Crypto.CipherParams();
         cipherParams.setIv(StringUtils.toHexStringNoPrefix(iv));
         crypto.setCipherparams(cipherParams);
-        crypto.setKdf(SCRYPT);
+        crypto.setKdf(Constant.SCRYPT);
 
         ScryptKdfParams kdfParams = new ScryptKdfParams();
         kdfParams.setN(n);
         kdfParams.setP(p);
-        kdfParams.setR(R);
-        kdfParams.setDklen(DKLEN);
+        kdfParams.setR(Constant.R);
+        kdfParams.setDklen(Constant.DKLEN);
         kdfParams.setSalt(StringUtils.toHexStringNoPrefix(salt));
 
         crypto.setKdfparams(kdfParams);
@@ -88,7 +83,7 @@ public class Wallet {
 
         walletFile.setCrypto(crypto);
         walletFile.setId(UUID.randomUUID().toString());
-        walletFile.setVersion(CURRENT_VERSION);
+        walletFile.setVersion(Constant.CURRENT_VERSION);
         walletFile.setAlias(keys.getAlias());
         walletFile.setXpub(keys.getXPub());
         walletFile.setType(keys.getKeyType());
@@ -98,21 +93,60 @@ public class Wallet {
 
     public static String createStandard(String password, Keys ecKeyPair)
             throws Exception {
-        return create(password, ecKeyPair, N_STANDARD, P_STANDARD);
+        return create(password, ecKeyPair, Constant.N_STANDARD, Constant.P_STANDARD);
     }
 
     public static Account creatAcount(List rootXPub, int quorum, String alias) throws Exception {
         String normalizedAlias = alias.trim().toLowerCase();
-        if (!TextUtils.isEmpty(SpUtil.getString(normalizedAlias)))
+        if (!TextUtils.isEmpty(SpUtil.getString("AccountAlias:" + normalizedAlias)))
             throw new Exception("alias is exist");
         int index = getNextAccountIndex();
         Account account = createSigners("account", rootXPub, quorum, index);
         String id = idGenerate(index);
         account.setId(id);
         account.setAlias(normalizedAlias);
-        SpUtil.putString(id, account.toJson());
+        String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
+        JsonObject accountObj = jsonToJsonObject(accountStr);
+        accountObj.add(id, new Gson().toJsonTree(account).getAsJsonObject());
+        SpUtil.putString(ACCOUNTS_JSON, StringUtils.objectToJson(accountObj));
         SpUtil.putString("AccountAlias:" + normalizedAlias, id);
         return account;
+    }
+
+    public static CtrlProgram createAddress(String accountId, String accountAlias) throws Exception {
+        String id = SpUtil.getString("AccountAlias:" + accountAlias.trim().toLowerCase(), "");
+        if (TextUtils.isEmpty(id)) throw new Exception("alias is not exist");
+        String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
+        JsonObject accountObj = jsonToJsonObject(accountStr);
+        Account curAccount = new Gson().fromJson(StringUtils.objectToJson(accountObj.get(id)), Account.class);
+        if (null == curAccount) throw new Exception("alias is not exist");
+        CtrlProgram cp;
+        if (1 == curAccount.getXpubs().size()) {
+            cp = createP2PKH(curAccount, false);
+        } else {
+            cp = createP2SH(curAccount, false);
+        }
+        return cp;
+    }
+
+    private static CtrlProgram createP2PKH(Account account, boolean change) {
+        return new CtrlProgram();
+    }
+
+    private static CtrlProgram createP2SH(Account account, boolean change) {
+        return new CtrlProgram();
+    }
+
+    public static List listAccounts() {
+        List accounts = new ArrayList();
+        String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
+        JsonObject accountObj = jsonToJsonObject(accountStr);
+        Iterator it = accountObj.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry entry = (Map.Entry) it.next();
+            accounts.add(entry.getValue());
+        }
+        return accounts;
     }
 
     private static Account createSigners(String signerType, List xpubs, int quorum, int accountIndex) throws Exception {
@@ -159,7 +193,7 @@ public class Wallet {
     }
 
     public static String createLight(String password, Keys ecKeyPair) throws Exception {
-        return create(password, ecKeyPair, N_LIGHT, P_LIGHT);
+        return create(password, ecKeyPair, Constant.N_LIGHT, Constant.P_LIGHT);
     }
 
     private static byte[] generateDerivedScryptKey(
@@ -173,20 +207,12 @@ public class Wallet {
 
     private static byte[] performCipherOperation(
             int mode, byte[] iv, byte[] encryptKey, byte[] text) throws Exception {
-        try {
-            IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
-            Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
 
-            SecretKeySpec secretKeySpec = new SecretKeySpec(encryptKey, "AES");
-            cipher.init(mode, secretKeySpec, ivParameterSpec);
-            return cipher.doFinal(text);
-        } catch (Exception e) {
-            return throwCipherException(e);
-        }
-    }
-
-    private static byte[] throwCipherException(Exception e) throws Exception {
-        throw new Exception("Error performing cipher operation", e);
+        SecretKeySpec secretKeySpec = new SecretKeySpec(encryptKey, "AES");
+        cipher.init(mode, secretKeySpec, ivParameterSpec);
+        return cipher.doFinal(text);
     }
 
     private static byte[] generateMac(byte[] derivedKey, byte[] cipherText) {

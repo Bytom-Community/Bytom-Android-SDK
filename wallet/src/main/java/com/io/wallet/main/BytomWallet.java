@@ -3,19 +3,19 @@ package com.io.wallet.main;
 import android.content.Context;
 
 import com.io.wallet.bean.Account;
-import com.io.wallet.bean.Constant;
 import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.Respon;
 import com.io.wallet.bean.Xpub;
 import com.io.wallet.crypto.ChainKd;
 import com.io.wallet.crypto.Wallet;
+import com.io.wallet.utils.Constant;
 import com.io.wallet.utils.StringUtils;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.io.wallet.crypto.Wallet.KEY_TYPE;
+import static com.io.wallet.utils.Constant.KEY_TYPE;
+
 
 /**
  * Created by hwj on 2018/8/20.
@@ -84,5 +84,19 @@ public class BytomWallet {
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
         }
         return new Respon(Constant.SUCCESS, account).toJson();
+    }
+
+    /**
+     * list all account
+     *
+     * @return
+     */
+    public static String listAccounts() {
+        return StringUtils.objectToJson(Wallet.listAccounts());
+    }
+
+    public static String createAccountReceiver(String accountId,String accountAlias){
+
+        return "";
     }
 }

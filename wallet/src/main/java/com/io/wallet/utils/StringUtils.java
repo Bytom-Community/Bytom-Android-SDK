@@ -1,8 +1,12 @@
 package com.io.wallet.utils;
 
 
+import android.text.TextUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.math.BigInteger;
 import java.text.DateFormat;
@@ -111,4 +115,23 @@ public class StringUtils {
             throw new Exception("bad key length");
         return key;
     }
+
+    public static JsonObject jsonToJsonObject(String str) {
+        JsonObject accountObj;
+        if (TextUtils.isEmpty(str)) {
+            accountObj = new JsonObject();
+        } else {
+            try {
+                accountObj = new JsonParser().parse(str).getAsJsonObject();
+            } catch (Exception e) {
+                accountObj = new JsonObject();
+            }
+        }
+        return accountObj;
+    }
+
+    public static String objectToJson(Object object){
+        return new Gson().toJson(object);
+    }
+
 }

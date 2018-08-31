@@ -17,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         BytomWallet.initWallet(getApplication(),this.getFilesDir().getAbsolutePath());
-        String key = BytomWallet.createKey("hwj", "123");
+        String key = BytomWallet.createKey("hwj5", "123");
         Log.d(Tag+"-key", key);
         String list = BytomWallet.listKeys();
         Log.d(Tag+"-listKey", list);
@@ -32,7 +32,11 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        String account = BytomWallet.createAccount("marshall", 1, xpub);
+        String account = BytomWallet.createAccount("marshall6", 1, xpub);
         Log.d(Tag+"-account", account);
+
+        String allCounts = BytomWallet.listAccounts();
+        Log.d(Tag+"-allCounts", account);
+
     }
 }
