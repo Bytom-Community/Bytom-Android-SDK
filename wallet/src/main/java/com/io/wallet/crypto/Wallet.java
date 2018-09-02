@@ -2,6 +2,7 @@ package com.io.wallet.crypto;
 
 import android.text.TextUtils;
 
+import com.amazonaws.util.Base64;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.io.wallet.bean.Account;
@@ -11,7 +12,9 @@ import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.ScryptKdfParams;
 import com.io.wallet.bean.WalletFile;
 import com.io.wallet.main.Storage;
+import com.io.wallet.script.ScriptBuilder;
 import com.io.wallet.utils.Constant;
+import com.io.wallet.utils.SegwitAddress;
 import com.io.wallet.utils.SpUtil;
 import com.io.wallet.utils.StringUtils;
 import com.lambdaworks.crypto.SCrypt;
@@ -32,6 +35,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.io.wallet.utils.Constant.ACCOUNTKEYSPACE;
 import static com.io.wallet.utils.Constant.ACCOUNTS_JSON;
 import static com.io.wallet.utils.StringUtils.jsonToJsonObject;
 
@@ -96,7 +101,7 @@ public class Wallet {
         return create(password, ecKeyPair, Constant.N_STANDARD, Constant.P_STANDARD);
     }
 
-    public static Account creatAcount(List rootXPub, int quorum, String alias) throws Exception {
+    public static Account creatAcount(ArrayList rootXPub, int quorum, String alias) throws Exception {
         String normalizedAlias = alias.trim().toLowerCase();
         if (!TextUtils.isEmpty(SpUtil.getString("AccountAlias:" + normalizedAlias)))
             throw new Exception("alias is exist");
@@ -129,12 +134,39 @@ public class Wallet {
         return cp;
     }
 
-    private static CtrlProgram createP2PKH(Account account, boolean change) {
-        return new CtrlProgram();
+    private static CtrlProgram createP2PKH(Account account, boolean change) throws Exception {
+        int idx = getNextContractIndex(account.getId());
+        ArrayList<byte[]> derivedXPubs = getPath(account, ACCOUNTKEYSPACE, idx);
+        byte[] pubHash = StringUtils.sha256hash160(derivedXPubs.get(0));
+        checkArgument(pubHash.length == 20, "witness program must be 20 bytes for p2wpkh");
+        String address = SegwitAddress.encode(Base64.decode(Constant.BECH32HRPSEGWI), Constant.WITNESSVERSION, pubHash);
+        byte[] control = new ScriptBuilder().data(pubHash).smallNum(0).build().getProgram();
+        return new CtrlProgram(account.getId(), address, idx, control, change);
     }
 
-    private static CtrlProgram createP2SH(Account account, boolean change) {
-        return new CtrlProgram();
+    private static CtrlProgram createP2SH(Account account, boolean change) throws Exception {
+        int idx = getNextContractIndex(account.getId());
+        ArrayList<byte[]> derivedXPubs = getPath(account, ACCOUNTKEYSPACE, idx);
+        byte[] signScript = ScriptBuilder.createMultiSigOutputScript(account.getQuorum(), derivedXPubs).getProgram();
+        byte[] scriptHash = StringUtils.sha256hash160(signScript);
+        checkArgument(scriptHash.length == 32, "witness program must be 32 bytes for p2wsh");
+        String address = SegwitAddress.encode(Base64.decode(Constant.BECH32HRPSEGWI), Constant.WITNESSVERSION, scriptHash);
+        byte[] control = new ScriptBuilder().data(scriptHash).smallNum(0).build().getProgram();
+        return new CtrlProgram(account.getId(), address, idx, control, change);
+    }
+
+    private static ArrayList<byte[]> getPath(Account account, byte keySpace, int... itemIndexes) {
+        ArrayList<byte[]> path = new ArrayList<>();
+        byte[] signerPath = new byte[9];
+        signerPath[0] = keySpace;
+        signerPath[1] = (byte) account.getKey_index();
+        path.add(signerPath);
+        for (int idx : itemIndexes) {
+            byte[] idxBytes = new byte[8];
+            idxBytes[0] = (byte) idx;
+            path.add(idxBytes);
+        }
+        return path;
     }
 
     public static List listAccounts() {
@@ -149,7 +181,7 @@ public class Wallet {
         return accounts;
     }
 
-    private static Account createSigners(String signerType, List xpubs, int quorum, int accountIndex) throws Exception {
+    private static Account createSigners(String signerType, ArrayList xpubs, int quorum, int accountIndex) throws Exception {
         if (null == xpubs || xpubs.size() == 0) {
             throw new Exception("xpubs is empty");
         }
@@ -187,8 +219,14 @@ public class Wallet {
     }
 
     private static int getNextAccountIndex() {
-        int nextIndex = SpUtil.getInt("accountIndexKey", 1);
-        SpUtil.putInt("accountIndexKey", nextIndex + 1);
+        int nextIndex = SpUtil.getInt("AccountIndex", 1);
+        SpUtil.putInt("AccountIndex", nextIndex + 1);
+        return nextIndex;
+    }
+
+    private static int getNextContractIndex(String accountID) {
+        int nextIndex = SpUtil.getInt("ContractIndex" + accountID, 1);
+        SpUtil.putInt("ContractIndex" + accountID, nextIndex + 1);
         return nextIndex;
     }
 

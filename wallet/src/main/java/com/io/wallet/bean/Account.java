@@ -2,13 +2,13 @@ package com.io.wallet.bean;
 
 import com.io.wallet.utils.StringUtils;
 
-import java.util.List;
+import java.util.ArrayList;
 
 public class Account {
     private String id;
     private String alias;
     private String type;
-    private List xpubs;
+    private ArrayList<byte[]> xpubs;
     private int quorum;
     private int key_index;
 
@@ -21,8 +21,12 @@ public class Account {
         this.type = type;
     }
 
-    public List getXpubs() {
+    public ArrayList<byte[]> getXpubs() {
         return xpubs;
+    }
+
+    public void setXpubs(ArrayList<byte[]> xpubs) {
+        this.xpubs = xpubs;
     }
 
     public int getQuorum() {
@@ -33,9 +37,6 @@ public class Account {
         this.quorum = quorum;
     }
 
-    public void setXpubs(List xpubs) {
-        this.xpubs = xpubs;
-    }
 
     public int getKey_index() {
         return key_index;

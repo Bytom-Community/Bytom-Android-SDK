@@ -7,6 +7,14 @@ public class CtrlProgram {
     private byte[] controlProgram;
     private boolean change;
 
+    public CtrlProgram(String accountId, String address, int keyIndex, byte[] controlProgram, boolean change) {
+        this.accountId = accountId;
+        this.address = address;
+        this.keyIndex = keyIndex;
+        this.controlProgram = controlProgram;
+        this.change = change;
+    }
+
     public String getAccountId() {
         return accountId;
     }
