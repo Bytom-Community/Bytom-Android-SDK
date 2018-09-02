@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import com.io.wallet.bean.Account;
 import com.io.wallet.main.BytomWallet;
 
 import org.json.JSONException;
@@ -16,8 +17,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        String alias = "hwj12334";
         BytomWallet.initWallet(getApplication(),this.getFilesDir().getAbsolutePath());
-        String key = BytomWallet.createKey("hwj5", "123");
+        String key = BytomWallet.createKey(alias, "123");
         Log.d(Tag+"-key", key);
         String list = BytomWallet.listKeys();
         Log.d(Tag+"-listKey", list);
@@ -32,11 +34,27 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        String account = BytomWallet.createAccount("marshall6", 1, xpub);
+        String account = BytomWallet.createAccount(alias, 1, xpub);
         Log.d(Tag+"-account", account);
 
         String allCounts = BytomWallet.listAccounts();
         Log.d(Tag+"-allCounts", account);
+
+
+        String accountId = "",accountAlias = "";
+        try {
+            JSONObject keyObject = new JSONObject(account);
+            String result = keyObject.getString("status");
+            if (result.equals("success")) {
+                accountId = keyObject.getJSONObject("data").getString("id");
+                accountAlias = keyObject.getJSONObject("data").getString("alias");
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        String address = BytomWallet.createAccountReceiver(accountId,accountAlias);
+        Log.d(Tag+"-address", address);
 
     }
 }

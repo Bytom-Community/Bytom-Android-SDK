@@ -52,7 +52,7 @@ public class Wallet {
                 password.getBytes(Charset.forName("UTF-8")), salt, n, Constant.R, p, Constant.DKLEN);
         byte[] encryptKey = Arrays.copyOfRange(derivedKey, 0, 16);
         byte[] iv = generateRandomBytes(16);
-        byte[] privateKeyBytes = keyPair.getXPrv().getBytes();
+        byte[] privateKeyBytes = keyPair.getXPrv();
         byte[] cipherText = performCipherOperation(
                 Cipher.ENCRYPT_MODE, iv, encryptKey, privateKeyBytes);
         byte[] mac = generateMac(derivedKey, cipherText);
@@ -69,10 +69,10 @@ public class Wallet {
 
         Crypto crypto = new Crypto();
         crypto.setCipher(Constant.CIPHER);
-        crypto.setCiphertext(StringUtils.toHexStringNoPrefix(cipherText));
+        crypto.setCiphertext(StringUtils.byte2hex(cipherText));
 
         Crypto.CipherParams cipherParams = new Crypto.CipherParams();
-        cipherParams.setIv(StringUtils.toHexStringNoPrefix(iv));
+        cipherParams.setIv(StringUtils.byte2hex(iv));
         crypto.setCipherparams(cipherParams);
         crypto.setKdf(Constant.SCRYPT);
 
@@ -88,10 +88,10 @@ public class Wallet {
 
         walletFile.setCrypto(crypto);
         walletFile.setId(UUID.randomUUID().toString());
+        walletFile.setType(keys.getKeyType());
         walletFile.setVersion(Constant.CURRENT_VERSION);
         walletFile.setAlias(keys.getAlias());
-        walletFile.setXpub(keys.getXPub());
-        walletFile.setType(keys.getKeyType());
+        walletFile.setXpub(StringUtils.byte2hex(keys.getXPub()));
 
         return walletFile;
     }
@@ -101,7 +101,7 @@ public class Wallet {
         return create(password, ecKeyPair, Constant.N_STANDARD, Constant.P_STANDARD);
     }
 
-    public static Account creatAcount(ArrayList rootXPub, int quorum, String alias) throws Exception {
+    public static Account creatAcount(List rootXPub, int quorum, String alias) throws Exception {
         String normalizedAlias = alias.trim().toLowerCase();
         if (!TextUtils.isEmpty(SpUtil.getString("AccountAlias:" + normalizedAlias)))
             throw new Exception("alias is exist");
@@ -139,7 +139,7 @@ public class Wallet {
         ArrayList<byte[]> derivedXPubs = getPath(account, ACCOUNTKEYSPACE, idx);
         byte[] pubHash = StringUtils.sha256hash160(derivedXPubs.get(0));
         checkArgument(pubHash.length == 20, "witness program must be 20 bytes for p2wpkh");
-        String address = SegwitAddress.encode(Base64.decode(Constant.BECH32HRPSEGWI), Constant.WITNESSVERSION, pubHash);
+        String address = SegwitAddress.encode(Constant.BECH32HRPSEGWI.getBytes(), Constant.WITNESSVERSION, pubHash);
         byte[] control = new ScriptBuilder().data(pubHash).smallNum(0).build().getProgram();
         return new CtrlProgram(account.getId(), address, idx, control, change);
     }
@@ -181,7 +181,7 @@ public class Wallet {
         return accounts;
     }
 
-    private static Account createSigners(String signerType, ArrayList xpubs, int quorum, int accountIndex) throws Exception {
+    private static Account createSigners(String signerType, List xpubs, int quorum, int accountIndex) throws Exception {
         if (null == xpubs || xpubs.size() == 0) {
             throw new Exception("xpubs is empty");
         }

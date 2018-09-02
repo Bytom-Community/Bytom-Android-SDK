@@ -3,6 +3,7 @@ package com.io.wallet.main;
 import android.content.Context;
 
 import com.io.wallet.bean.Account;
+import com.io.wallet.bean.CtrlProgram;
 import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.Respon;
 import com.io.wallet.bean.Xpub;
@@ -11,6 +12,7 @@ import com.io.wallet.crypto.Wallet;
 import com.io.wallet.utils.Constant;
 import com.io.wallet.utils.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,15 +37,15 @@ public class BytomWallet {
      * @return
      */
     public static String createKey(String alias, String password) {
-        if (Storage.getInstance().hasAlias(alias.trim().toLowerCase())) {
+        if (Storage.getInstance().hasKeyAlias(alias.trim().toLowerCase())) {
             return new Respon(Constant.FAIL, "alias exist").toJson();
         }
-        String priKey = ChainKd.rootXPrv();
-        String pubKey = StringUtils.byte2hex(ChainKd.deriveXpub(priKey.getBytes()));
+        byte[] priKey = ChainKd.rootXPrv();
+        byte[] pubKey = ChainKd.deriveXpub(priKey);
         Keys keys = new Keys(StringUtils.getUUID32(), alias, pubKey, KEY_TYPE, priKey);
         Xpub xpub;
         try {
-            xpub = new Xpub(pubKey, alias, Wallet.createLight(password, keys));
+            xpub = new Xpub(StringUtils.byte2hex(pubKey), alias, Wallet.createLight(password, keys));
         } catch (Exception e) {
             e.printStackTrace();
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
@@ -78,7 +80,7 @@ public class BytomWallet {
     public static String createAccount(String alias, int quorum, String rootXPub) {
         Account account;
         try {
-            account = Wallet.creatAcount(Arrays.asList(StringUtils.getUnmarshalText(rootXPub)), quorum, alias);
+            account = Wallet.creatAcount(new ArrayList(Arrays.asList(StringUtils.getUnmarshalText(rootXPub))), quorum, alias);
         } catch (Exception e) {
             e.printStackTrace();
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
@@ -95,8 +97,21 @@ public class BytomWallet {
         return StringUtils.objectToJson(Wallet.listAccounts());
     }
 
-    public static String createAccountReceiver(String accountId,String accountAlias){
+    /**
+     * creat address
+     * @param accountId
+     * @param accountAlias
+     * @return
+     */
+    public static String createAccountReceiver(String accountId, String accountAlias) {
+        CtrlProgram ctrlProgram;
+        try {
+            ctrlProgram = Wallet.createAddress(accountId, accountAlias);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
 
-        return "";
+        return ctrlProgram.getAddress();
     }
 }

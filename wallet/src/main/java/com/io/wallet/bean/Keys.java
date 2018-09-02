@@ -10,14 +10,14 @@ public class Keys {
 
     private String ID;
     private String Alias;
-    private String XPub;
+    private byte[] XPub;
     private String KeyType;
-    private String XPrv;
+    private byte[] XPrv;
 
     public Keys() {
     }
 
-    public Keys(String ID, String alias, String XPub, String keyType, String XPrv) {
+    public Keys(String ID, String alias, byte[] XPub, String keyType, byte[] XPrv) {
         this.ID = ID;
         Alias = alias;
         this.XPub = XPub;
@@ -41,11 +41,11 @@ public class Keys {
         Alias = alias;
     }
 
-    public String getXPub() {
+    public byte[] getXPub() {
         return XPub;
     }
 
-    public void setXPub(String XPub) {
+    public void setXPub(byte[] XPub) {
         this.XPub = XPub;
     }
 
@@ -57,11 +57,11 @@ public class Keys {
         KeyType = keyType;
     }
 
-    public String getXPrv() {
+    public byte[] getXPrv() {
         return XPrv;
     }
 
-    public void setXPrv(String XPrv) {
+    public void setXPrv(byte[] XPrv) {
         this.XPrv = XPrv;
     }
 

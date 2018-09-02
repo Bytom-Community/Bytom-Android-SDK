@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
+import android.text.TextUtils;
 
 import com.io.wallet.bean.WalletFile;
 import com.io.wallet.bean.Xpub;
@@ -27,7 +28,7 @@ import java.util.List;
 
 public class Storage {
 
-    private ArrayList<WalletFile> mapWallet;
+    private ArrayList<WalletFile> mapWallet = new ArrayList<>();
     private static Storage instance;
     private String KEYS_PATH;
 
@@ -38,16 +39,18 @@ public class Storage {
     }
 
     private Storage() {
-        try {
-            load();
-        } catch (Exception e) {
-            e.printStackTrace();
-            mapWallet = new ArrayList<>();
-        }
+
     }
 
-    public void init(Context context,String path) {
+    public void init(Context context, String path) {
         this.KEYS_PATH = path;
+        try {
+            load();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         SpUtil.init(context);
     }
 
@@ -65,6 +68,11 @@ public class Storage {
             if (mapWallet.get(i).getAlias().equalsIgnoreCase(alias)) return true;
         }
         return false;
+    }
+
+    public boolean hasKeyAlias(String alias) {
+        String curAlias = SpUtil.getString("KeyAlias:" + alias, "");
+        return !TextUtils.isEmpty(curAlias.trim());
     }
 
     public synchronized ArrayList<WalletFile> get() {
@@ -192,6 +200,7 @@ public class Storage {
             if (null != ps) {
                 ps.close();
             }
+            SpUtil.putString("KeyAlias:" + key.getAlias(), key.getAlias());
         }
         return file.getAbsolutePath();
     }

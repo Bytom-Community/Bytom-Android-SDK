@@ -3,12 +3,13 @@ package com.io.wallet.bean;
 import com.io.wallet.utils.StringUtils;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Account {
     private String id;
     private String alias;
     private String type;
-    private ArrayList<byte[]> xpubs;
+    private List xpubs;
     private int quorum;
     private int key_index;
 
@@ -21,11 +22,11 @@ public class Account {
         this.type = type;
     }
 
-    public ArrayList<byte[]> getXpubs() {
+    public List getXpubs() {
         return xpubs;
     }
 
-    public void setXpubs(ArrayList<byte[]> xpubs) {
+    public void setXpubs(List xpubs) {
         this.xpubs = xpubs;
     }
 

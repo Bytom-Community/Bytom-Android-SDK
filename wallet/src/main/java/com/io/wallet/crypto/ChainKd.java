@@ -1,5 +1,8 @@
 package com.io.wallet.crypto;
 
+import com.io.wallet.utils.HDUtils;
+
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -12,11 +15,14 @@ public class ChainKd {
      *
      * @return
      */
-    public static String rootXPrv() {
+    public static byte[] rootXPrv() {
         Random randomno = new Random();
         byte[] nbyte = new byte[32];
         randomno.nextBytes(nbyte);
-        return HMACSHA256.HMACSHA256(nbyte, new byte[]{'R', 'o', 'o', 't'});
+        byte[] keys = HDUtils.hmacSha512(new byte[]{'R', 'o', 'o', 't'}, nbyte);
+        byte[] pri = pruneRootScalar(Arrays.copyOfRange(keys, 0, 32));
+        System.arraycopy(pri, 0, keys, 0, 32);
+        return keys;
     }
 
     /**
@@ -33,6 +39,21 @@ public class ChainKd {
         System.arraycopy(buf, 0, xpub, 0, buf.length);
         System.arraycopy(xprv, xprv.length / 2, xpub, xprv.length / 2, xprv.length / 2);
         return xpub;
+    }
+
+    /**
+     * key must be >= 32 bytes long and gets rewritten in place.
+     * This is NOT the same pruning as in Ed25519: it additionally clears the third
+     * highest bit to ensure subkeys do not overflow the second highest bit.
+     *
+     * @param key
+     * @return
+     */
+    private static byte[] pruneRootScalar(byte[] key) {
+        key[0] &= 248;
+        key[31] &= 31;
+        key[31] |= 64;
+        return key;
     }
 
 }

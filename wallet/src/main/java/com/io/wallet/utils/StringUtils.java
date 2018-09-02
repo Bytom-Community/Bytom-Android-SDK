@@ -46,7 +46,7 @@ public class StringUtils {
                 hs.append('0');
             hs.append(stmp);
         }
-        return hs.toString().toUpperCase();
+        return hs.toString();
     }
 
     /**
