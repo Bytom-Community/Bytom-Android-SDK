@@ -17,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        String alias = "hwj12334";
+        String alias = "hwj15348";
         BytomWallet.initWallet(getApplication(),this.getFilesDir().getAbsolutePath());
         String key = BytomWallet.createKey(alias, "123");
         Log.d(Tag+"-key", key);
@@ -54,6 +54,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String address = BytomWallet.createAccountReceiver(accountId,accountAlias);
+        Log.d(Tag+"-address", address);
+
+        String addressList = BytomWallet.listAddress(accountId,accountAlias);
         Log.d(Tag+"-address", address);
 
     }

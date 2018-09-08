@@ -221,7 +221,9 @@ public class Storage {
         }
         File[] files = baseFile.listFiles();
         for (File file : files) {
-            list.add(Xpub.getXpubObj(getFileString(file)));
+            if (file.getName().startsWith("UTC")) {
+                list.add(Xpub.getXpubObj(getFileString(file)));
+            }
         }
         return list;
     }

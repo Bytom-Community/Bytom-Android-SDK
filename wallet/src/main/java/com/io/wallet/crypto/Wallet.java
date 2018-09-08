@@ -6,6 +6,7 @@ import com.amazonaws.util.Base64;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.io.wallet.bean.Account;
+import com.io.wallet.bean.AddressResp;
 import com.io.wallet.bean.Crypto;
 import com.io.wallet.bean.CtrlProgram;
 import com.io.wallet.bean.Keys;
@@ -38,6 +39,8 @@ import javax.crypto.spec.SecretKeySpec;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.io.wallet.utils.Constant.ACCOUNTKEYSPACE;
 import static com.io.wallet.utils.Constant.ACCOUNTS_JSON;
+import static com.io.wallet.utils.Constant.ADDRESS_JSON;
+import static com.io.wallet.utils.Constant.CONTRACTPREFIX;
 import static com.io.wallet.utils.StringUtils.jsonToJsonObject;
 
 /**
@@ -45,6 +48,10 @@ import static com.io.wallet.utils.StringUtils.jsonToJsonObject;
  */
 
 public class Wallet {
+
+    public void initNativeAsset() {
+
+    }
 
     public static String create(String password, Keys keyPair, int n, int p) throws Exception {
         byte[] salt = generateRandomBytes(32);
@@ -131,7 +138,16 @@ public class Wallet {
         } else {
             cp = createP2SH(curAccount, false);
         }
+        insertControlPrograms(id, cp);
         return cp;
+    }
+
+    private static void insertControlPrograms(String id, CtrlProgram cp) {
+        String addressStr = SpUtil.getString(ADDRESS_JSON + id, "");
+        JsonObject addressObj = jsonToJsonObject(addressStr);
+        String hash = StringUtils.hashToString(Hash.sha3(cp.getControlProgram()));
+        addressObj.add(CONTRACTPREFIX + hash, new Gson().toJsonTree(cp).getAsJsonObject());
+        SpUtil.putString(ADDRESS_JSON + id, StringUtils.objectToJson(addressObj));
     }
 
     private static CtrlProgram createP2PKH(Account account, boolean change) throws Exception {
@@ -179,6 +195,47 @@ public class Wallet {
             accounts.add(entry.getValue());
         }
         return accounts;
+    }
+
+    public static List listAddress(String accountID, String accountAlias) throws Exception {
+        List address = new ArrayList();
+        Account target = null;
+        if (TextUtils.isEmpty(accountID)) {
+            SpUtil.getString("AccountAlias:" + accountAlias.trim().toLowerCase(), "");
+        }
+        if (!TextUtils.isEmpty(accountID)) {
+            String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
+            JsonObject accountObj = jsonToJsonObject(accountStr);
+            Iterator it = accountObj.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry entry = (Map.Entry) it.next();
+                if (entry.getKey().equals(accountID)) {
+                    target = Account.getAccount(StringUtils.objectToJson(entry.getValue()));
+                }
+
+            }
+        }
+        if (TextUtils.isEmpty(accountID) || null == target) {
+            throw new Exception("accountID is Invalid");
+        }
+        String addressStr = SpUtil.getString(ADDRESS_JSON + accountID, "");
+        JsonObject addressObj = jsonToJsonObject(addressStr);
+        Iterator it = addressObj.entrySet().iterator();
+
+        while (it.hasNext()) {
+            AddressResp resp = new AddressResp();
+            Map.Entry entry = (Map.Entry) it.next();
+            JsonObject object = (JsonObject) entry.getValue();
+            CtrlProgram cp = new Gson().fromJson(StringUtils.objectToJson(object), CtrlProgram.class);
+            resp.account_alias  = accountAlias;
+            resp.account_id = accountID;
+            resp.address = cp.getAddress();
+            resp.control_program = StringUtils.byte2hex(cp.getControlProgram());
+            resp.change = cp.isChange();
+            resp.keyIndex = cp.getKeyIndex();
+            address.add(resp);
+        }
+        return address;
     }
 
     private static Account createSigners(String signerType, List xpubs, int quorum, int accountIndex) throws Exception {

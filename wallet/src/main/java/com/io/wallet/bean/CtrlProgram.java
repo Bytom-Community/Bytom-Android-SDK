@@ -1,5 +1,7 @@
 package com.io.wallet.bean;
 
+import com.io.wallet.utils.StringUtils;
+
 public class CtrlProgram {
     private String accountId;
     private String address;
@@ -53,5 +55,9 @@ public class CtrlProgram {
 
     public void setChange(boolean change) {
         this.change = change;
+    }
+
+    public String toJson() {
+        return StringUtils.serializer.toJson(this);
     }
 }

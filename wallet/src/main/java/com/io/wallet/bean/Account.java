@@ -66,4 +66,8 @@ public class Account {
     public String toJson() {
         return StringUtils.serializer.toJson(this);
     }
+
+    public static Account getAccount(String account) {
+        return StringUtils.serializer.fromJson(account, Account.class);
+    }
 }

@@ -94,11 +94,12 @@ public class BytomWallet {
      * @return
      */
     public static String listAccounts() {
-        return StringUtils.objectToJson(Wallet.listAccounts());
+        return new Respon(Constant.SUCCESS, Wallet.listAccounts()).toJson();
     }
 
     /**
      * creat address
+     *
      * @param accountId
      * @param accountAlias
      * @return
@@ -109,9 +110,34 @@ public class BytomWallet {
             ctrlProgram = Wallet.createAddress(accountId, accountAlias);
         } catch (Exception e) {
             e.printStackTrace();
-            return "";
+            return new Respon(Constant.FAIL, e.getMessage()).toJson();
         }
 
-        return ctrlProgram.getAddress();
+        return new Respon(Constant.SUCCESS, ctrlProgram.getAddress()).toJson();
+    }
+
+    /**
+     * list all address
+     *
+     * @param accountID
+     * @param accountAlias
+     * @return
+     */
+    public static String listAddress(String accountID, String accountAlias) {
+        try {
+            return new Respon(Constant.SUCCESS, Wallet.listAddress(accountID, accountAlias)).toJson();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new Respon(Constant.FAIL, e.getMessage()).toJson();
+        }
+    }
+
+    /**
+     * backup Wallet
+     *
+     * @return
+     */
+    public static String backupWalletImage() {
+        return "";
     }
 }

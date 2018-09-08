@@ -4,6 +4,7 @@ public class Constant {
     public static String SUCCESS = "success";
     public static String FAIL = "fail";
     public static String ACCOUNTS_JSON = "account_json";
+    public static String ADDRESS_JSON = "address_json";
 
     public static final int N_LIGHT = 1 << 12;
     public static final int P_LIGHT = 6;
@@ -24,4 +25,6 @@ public class Constant {
     public static final byte WITNESSVERSION = 0x00;
 
     public static final byte ACCOUNTKEYSPACE = 1;
+
+    public static final String CONTRACTPREFIX = "Contract:";
 }
