@@ -1,12 +1,15 @@
 package com.io.wallet.utils;
 
+import org.bouncycastle.util.encoders.Hex;
 import org.spongycastle.crypto.digests.RIPEMD160Digest;
 import org.spongycastle.crypto.digests.SHA512Digest;
 import org.spongycastle.crypto.macs.HMac;
 import org.spongycastle.crypto.params.KeyParameter;
 
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public class HDUtils {
 
@@ -43,6 +46,16 @@ public class HDUtils {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);  // Cannot happen.
         }
+    }
+
+    public static byte[] expandedPrivateKey(byte[] data)
+            throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
+        // "457870616e64" is "Expand" hex.
+        byte[] res = hmacSha512(Hex.decode("457870616e64"), data);
+        for (int i = 0; i <= 31; i++) {
+            res[i] = data[i];
+        }
+        return res;
     }
 
 

@@ -1,13 +1,16 @@
 package com.io.wallet.crypto;
 
+import android.util.Log;
+
 import com.io.wallet.utils.HDUtils;
 import com.io.wallet.utils.Strings;
 import com.lambdaworks.crypto.SCrypt;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Created by hwj on 2018/8/21.
@@ -100,6 +103,7 @@ public class ChainKd {
 
     /**
      * generate mac
+     *
      * @param derivedKey
      * @param cipherText
      * @return
@@ -109,6 +113,32 @@ public class ChainKd {
         System.arraycopy(derivedKey, 16, result, 0, 16);
         System.arraycopy(cipherText, 0, result, 16, cipherText.length);
         return Hash.sha3(result);
+    }
+
+
+    /**
+     * find private key dst
+     *
+     * @param privateKeys
+     * @param xpub
+     * @return
+     * @throws Exception
+     */
+    public static int find(String[] privateKeys, String xpub) throws Exception {
+        // 多签情况下，找到xpub对应的private key的下标 dst
+        int dst = -1;
+        for (int k = 0; k < privateKeys.length; k++) {
+            byte[] tempXpub = ChainKd.deriveXpub(Hex.decode(privateKeys[k]));
+            if (xpub.equals(Hex.toHexString(tempXpub))) {
+                dst = k;
+                Log.d("private[dst]: ", privateKeys[dst]);
+                break;
+            }
+        }
+        if (dst == -1) {
+            throw new Exception("Not a proper private key to sign transaction.");
+        }
+        return dst;
     }
 
 }

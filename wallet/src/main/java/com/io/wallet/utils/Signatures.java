@@ -5,8 +5,6 @@ import android.util.Log;
 import com.io.wallet.bean.RawTransaction;
 import com.io.wallet.bean.Template;
 import com.io.wallet.crypto.ChainKd;
-import com.io.wallet.crypto.ExpandedPrivateKey;
-import com.io.wallet.crypto.FindDst;
 import com.io.wallet.crypto.NonHardenedChild;
 import com.io.wallet.crypto.Signer;
 
@@ -38,7 +36,7 @@ public class Signatures {
                                 try {
                                     String publicKey = wc.keys[j].xpub;
                                     // 多签情况下，找到xpub对应的private key的下标 dst
-                                    int dst = FindDst.find(privateKeys, publicKey);
+                                    int dst = ChainKd.find(privateKeys, publicKey);
                                     //一级私钥
                                     byte[] privateKey = Hex.decode(privateKeys[dst]);
                                     // 一级私钥推出二级私钥
@@ -47,7 +45,7 @@ public class Signatures {
                                     // 一级私钥推出公钥
                                     byte[] xpub = ChainKd.deriveXpub(privateKey);
                                     // 二级私钥得到扩展私钥
-                                    byte[] expandedPrv = ExpandedPrivateKey.ExpandedPrivateKey(childXprv);
+                                    byte[] expandedPrv = HDUtils.expandedPrivateKey(childXprv);
                                     Log.d("privateKey: ", Strings.byte2hex(privateKey));
                                     Log.d("childXpriv: ", Strings.byte2hex(childXprv));
                                     Log.d("xpub: ", Strings.byte2hex(xpub));

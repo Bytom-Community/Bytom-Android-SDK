@@ -18,7 +18,7 @@ import com.io.wallet.bean.WalletImage;
 import com.io.wallet.blockchain.account.AccountCache;
 import com.io.wallet.blockchain.keys.KeyCache;
 import com.io.wallet.blockchain.keys.Keys;
-import com.io.wallet.main.BytomWallet;
+import com.io.wallet.blockchain.keys.Xpub;
 import com.io.wallet.script.ScriptBuilder;
 import com.io.wallet.utils.Constant;
 import com.io.wallet.utils.HDUtils;
@@ -65,7 +65,7 @@ public class Wallet {
      * @return
      * @throws Exception
      */
-    public static String create(String password, Keys keyPair, int n, int p) throws Exception {
+    public static String create(String password, Keys keyPair, int n, int p, String keyPath) throws Exception {
         byte[] salt = generateRandomBytes(32);
         byte[] derivedKey = generateDerivedScryptKey(
                 password.getBytes(), salt, n, Constant.R, p, Constant.DKLEN);
@@ -77,7 +77,7 @@ public class Wallet {
         byte[] mac = ChainKd.generateMac(derivedKey, cipherText);
 
         EncryptedKey key = getEncryptedKey(keyPair, cipherText, iv, salt, mac, n, p);
-        return KeyCache.saveEncryptedKey(BytomWallet.PATH, key, Strings.keyFileName(keyPair.getID()));
+        return KeyCache.saveEncryptedKey(key, keyPath);
     }
 
     /**
@@ -125,13 +125,13 @@ public class Wallet {
         return encryptedKey;
     }
 
-    public static String createLight(String password, Keys ecKeyPair) throws Exception {
-        return create(password, ecKeyPair, Constant.N_LIGHT, Constant.P_LIGHT);
+    public static String createLight(String password, Keys ecKeyPair, String keyPath) throws Exception {
+        return create(password, ecKeyPair, Constant.N_LIGHT, Constant.P_LIGHT, keyPath);
     }
 
     public static String createStandard(String password, Keys ecKeyPair)
             throws Exception {
-        return create(password, ecKeyPair, Constant.N_STANDARD, Constant.P_STANDARD);
+        return create(password, ecKeyPair, Constant.N_STANDARD, Constant.P_STANDARD, Strings.keyFileName(ecKeyPair.getID()));
     }
 
     public static Account creatAcount(List rootXPub, int quorum, String alias) throws Exception {
@@ -177,7 +177,7 @@ public class Wallet {
     }
 
     private static CtrlProgram createP2PKH(Account account, boolean change) throws Exception {
-        int idx = getNextContractIndex(account.getId());
+        int idx = AccountCache.getNextContractIndex(account.getId());
         ArrayList<byte[]> derivedXPubs = getPath(account, ACCOUNTKEYSPACE, idx);
         byte[] pubHash = HDUtils.sha256hash160(derivedXPubs.get(0));
         checkArgument(pubHash.length == 20, "witness program must be 20 bytes for p2wpkh");
@@ -187,7 +187,7 @@ public class Wallet {
     }
 
     private static CtrlProgram createP2SH(Account account, boolean change) throws Exception {
-        int idx = getNextContractIndex(account.getId());
+        int idx = AccountCache.getNextContractIndex(account.getId());
         ArrayList<byte[]> derivedXPubs = getPath(account, ACCOUNTKEYSPACE, idx);
         byte[] signScript = ScriptBuilder.createMultiSigOutputScript(account.getQuorum(), derivedXPubs).getProgram();
         byte[] scriptHash = HDUtils.sha256hash160(signScript);
@@ -240,7 +240,6 @@ public class Wallet {
         if (null == xpubs || xpubs.size() == 0) {
             throw new Exception("at least one xpub is required");
         }
-
         Collections.sort(xpubs);
         for (int i = 1; i < xpubs.size(); i++) {
             if (xpubs.get(i).equals(xpubs.get(i - 1))) {
@@ -259,17 +258,10 @@ public class Wallet {
         return account;
     }
 
-    private static int getNextContractIndex(String accountID) {
-        int nextIndex = Hawk.get("ContractIndex" + accountID, 1);
-        Hawk.put("ContractIndex" + accountID, nextIndex + 1);
-        return nextIndex;
-    }
-
-
     public static WalletImage backup() {
         KeyImages keyImages = new KeyImages(KeyCache.getAllEncryptedKey());
-        AccountImage accountImage = new AccountImage(AccountCache.getAllAccount());
-        return new WalletImage(accountImage, new AssetImage(), keyImages);
+        AccountImage accountImage = new AccountImage(AccountCache.backup());
+        return new WalletImage(accountImage, new AssetImage(new ArrayList()), keyImages);
     }
 
     private static byte[] performCipherOperation(
@@ -294,7 +286,7 @@ public class Wallet {
         Keys keys = decryptKey(wallet, auth);
         byte[] xprv = keys.getXPrv();
         if (path.length > 0) {
-//            xprv =  ExpandedPrivateKey.ExpandedPrivateKey(NonHardenedChild.child(xprv, path));
+//            xprv =  HDUtils.expandedPrivateKey(NonHardenedChild.child(xprv, path));
         }
         return Signer.Ed25519InnerSign(xprv, msg);
     }
@@ -328,11 +320,33 @@ public class Wallet {
         byte[] salt = params.getSalt().getBytes();
         int dkLen = params.getDklen();
         if ("scrypt".equals(cryptoJSON.getKdf())) {
-            return generateDerivedScryptKey(
-                    authArray, salt, params.getN(), params.getR(), params.getP(), params.getP());
+            return generateDerivedScryptKey(authArray, salt, params.getN(), params.getR(), params.getP(), dkLen);
         } else if ("pbkdf2".equals(cryptoJSON.getKdf())) {
-
+            //TODO
         }
         throw new Exception("Unsupported KDF");
+    }
+
+    public static Keys loadDecryptKeyByXpub(String xpub, String auth) throws Exception {
+        EncryptedKey key = KeyCache.getEncryptedKey(xpub);
+        if (null != key) {
+            return decryptKey(key, auth);
+        }
+        throw new Exception("load decrypt key failure");
+    }
+
+    public static void resetPassword(String xpub, String oldAuth, String newAuth) throws Exception {
+        Xpub xpubObj = KeyCache.getXpub(xpub);
+        if (null == xpubObj || TextUtils.isEmpty(oldAuth) || TextUtils.isEmpty(newAuth))
+            throw new Exception("illegality input");
+        Keys keys = loadDecryptKeyByXpub(xpub, oldAuth);
+        if (null != keys) {
+            Wallet.createLight(newAuth, keys, xpubObj.getFile());
+        }
+    }
+
+    public static void restoreWalletImage(WalletImage image) throws Exception {
+        KeyCache.restore(image.key_images.xkeys);
+        AccountCache.restore(image.account_image.slices);
     }
 }

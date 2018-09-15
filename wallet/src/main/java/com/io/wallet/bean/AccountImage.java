@@ -7,9 +7,9 @@ import java.util.List;
  */
 
 public class AccountImage {
-    public List slices;
+    public List<ImageSlice> slices;
 
-    public AccountImage(List slices) {
+    public AccountImage(List<ImageSlice> slices) {
         this.slices = slices;
     }
 }

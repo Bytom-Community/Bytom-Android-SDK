@@ -17,7 +17,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import static com.io.wallet.blockchain.keys.Keys.extendedPublicKeySize;
+import static com.io.wallet.utils.Constant.extendedPublicKeySize;
 
 public class Strings {
     final protected static char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -26,6 +26,9 @@ public class Strings {
 
     /**
      * Returns the given byte array hex encoded.
+     *
+     * @param b
+     * @return
      */
     public static String byte2hex(byte[] b) {
         StringBuilder hs = new StringBuilder();
@@ -39,6 +42,12 @@ public class Strings {
         return hs.toString();
     }
 
+    /**
+     * Return the given hex bytes decoded
+     *
+     * @param input
+     * @return
+     */
     public static byte[] hex2Bytes(String input) {
         int len = input.length();
         if (len == 0) {
@@ -62,11 +71,22 @@ public class Strings {
         return data;
     }
 
+    /**
+     * get UUID
+     *
+     * @return
+     */
     public static String getUUID32() {
         return UUID.randomUUID().toString().toLowerCase();
     }
 
 
+    /**
+     * get format timestamp
+     *
+     * @param date
+     * @return
+     */
     public static String getISO8601Timestamp(Date date) {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -94,12 +114,18 @@ public class Strings {
      * @return
      * @throws Exception
      */
-    public static byte[] getUnmarshalText(String key) throws Exception {
+    public static String getUnmarshalText(String key) throws Exception {
         if (key.length() != 2 * extendedPublicKeySize)
             throw new Exception("bad key length");
-        return Strings.hex2Bytes(key);
+        return key;
     }
 
+    /**
+     * cover json to object
+     *
+     * @param str
+     * @return
+     */
     public static JsonObject jsonToJsonObject(String str) {
         JsonObject accountObj;
         if (TextUtils.isEmpty(str)) {
@@ -114,14 +140,31 @@ public class Strings {
         return accountObj;
     }
 
+    /**
+     * cover object to json string
+     *
+     * @param object
+     * @return
+     */
     public static String objectToJson(Object object) {
         return new Gson().toJson(object);
     }
 
+    /**
+     * return curernt time seconds
+     *
+     * @return
+     */
     public static long currentTimeSeconds() {
         return System.currentTimeMillis() / 1000;
     }
 
+    /**
+     *
+     * @param val
+     * @param stream
+     * @throws IOException
+     */
     public static void uint32ToByteStreamLE(long val, OutputStream stream) throws IOException {
         stream.write((int) (0xFF & (val)));
         stream.write((int) (0xFF & (val >> 8)));

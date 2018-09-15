@@ -8,9 +8,6 @@ import org.spongycastle.jcajce.provider.digest.Keccak;
  * Crypto related functions.
  */
 public class Hash {
-    private Hash() {
-    }
-
     /**
      * Keccak-256 hash function.
      *

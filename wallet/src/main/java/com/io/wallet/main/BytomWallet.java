@@ -3,11 +3,16 @@ package com.io.wallet.main;
 import android.content.Context;
 import android.text.TextUtils;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.io.wallet.bean.Account;
 import com.io.wallet.bean.CtrlProgram;
 import com.io.wallet.bean.RawTransaction;
+import com.io.wallet.bean.Receiver;
+import com.io.wallet.bean.ResetPasswordResp;
 import com.io.wallet.bean.Respon;
 import com.io.wallet.bean.Template;
+import com.io.wallet.bean.WalletImage;
 import com.io.wallet.blockchain.account.AccountCache;
 import com.io.wallet.blockchain.keys.KeyCache;
 import com.io.wallet.blockchain.keys.Keys;
@@ -56,7 +61,7 @@ public class BytomWallet {
         Keys keys = new Keys(Strings.getUUID32(), alias, pubKey, KEY_TYPE, priKey);
         Xpub xpub;
         try {
-            xpub = new Xpub(Strings.byte2hex(pubKey), alias, Wallet.createLight(password, keys));
+            xpub = new Xpub(Strings.byte2hex(pubKey), alias, Wallet.createLight(password, keys, Strings.keyFileName(keys.getID())));
             KeyCache.addXpu(xpub);
         } catch (Exception e) {
             e.printStackTrace();
@@ -118,7 +123,7 @@ public class BytomWallet {
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
         }
 
-        return new Respon(Constant.SUCCESS, ctrlProgram.getAddress()).toJson();
+        return new Respon(Constant.SUCCESS, new Receiver(Strings.byte2hex(ctrlProgram.getControlProgram()), ctrlProgram.getAddress())).toJson();
     }
 
     /**
@@ -144,6 +149,40 @@ public class BytomWallet {
      */
     public static String backupWallet() {
         return new Respon(Constant.SUCCESS, Wallet.backup()).toJson();
+    }
+
+    /**
+     * reset root key password
+     *
+     * @param rootXPub
+     * @param oldPassword
+     * @param newPassword
+     * @return
+     */
+    public static String resetKeyPassword(String rootXPub, String oldPassword, String newPassword) {
+        try {
+            Wallet.resetPassword(rootXPub, oldPassword, newPassword);
+            return new Respon(Constant.SUCCESS, new ResetPasswordResp(true)).toJson();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new Respon(Constant.FAIL, new ResetPasswordResp(false)).toJson();
+        }
+    }
+
+    /**
+     * restore wallet image
+     *
+     * @param walletImage
+     * @return
+     */
+    public static String restoreWallet(String walletImage) {
+        try {
+            JsonObject object = new JsonParser().parse(walletImage).getAsJsonObject();
+            Wallet.restoreWalletImage(Strings.serializer.fromJson(object.get("data"), WalletImage.class));
+        } catch (Exception e) {
+            return new Respon(Constant.FAIL, "Invalid image string").toJson();
+        }
+        return new Respon(Constant.SUCCESS, "").toJson();
     }
 
 

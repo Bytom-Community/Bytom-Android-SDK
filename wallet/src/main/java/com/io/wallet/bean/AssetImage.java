@@ -8,4 +8,8 @@ import java.util.List;
 
 public class AssetImage {
     List asset_image;
+
+    public AssetImage(List asset_image) {
+        this.asset_image = asset_image;
+    }
 }

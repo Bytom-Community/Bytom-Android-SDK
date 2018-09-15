@@ -19,6 +19,9 @@ public class Constant {
 
     public static final int CURRENT_VERSION = 1;
     public static final String KEY_TYPE = "bytom_kd";
+    public static final int PRIVATE_KEY_SIZE = 32;
+    public static final int PUBLIC_KEY_SIZE = 64;
+    public static final int extendedPublicKeySize = 64;
 
     public static final String BECH32HRPSEGWI = "bm";
     public static final byte WITNESSVERSION = 0x00;
