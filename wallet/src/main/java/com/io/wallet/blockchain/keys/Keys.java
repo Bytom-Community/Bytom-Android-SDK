@@ -1,6 +1,6 @@
-package com.io.wallet.bean;
+package com.io.wallet.blockchain.keys;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 public class Keys {
     public static final int PRIVATE_KEY_SIZE = 32;
@@ -66,6 +66,6 @@ public class Keys {
     }
 
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 }

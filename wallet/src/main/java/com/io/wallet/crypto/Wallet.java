@@ -11,23 +11,21 @@ import com.io.wallet.bean.AddressResp;
 import com.io.wallet.bean.AssetImage;
 import com.io.wallet.bean.Crypto;
 import com.io.wallet.bean.CtrlProgram;
+import com.io.wallet.bean.EncryptedKey;
 import com.io.wallet.bean.KeyImages;
-import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.ScryptKdfParams;
-import com.io.wallet.bean.WalletFile;
 import com.io.wallet.bean.WalletImage;
-import com.io.wallet.main.Storage;
+import com.io.wallet.blockchain.account.AccountCache;
+import com.io.wallet.blockchain.keys.KeyCache;
+import com.io.wallet.blockchain.keys.Keys;
+import com.io.wallet.main.BytomWallet;
 import com.io.wallet.script.ScriptBuilder;
 import com.io.wallet.utils.Constant;
+import com.io.wallet.utils.HDUtils;
 import com.io.wallet.utils.SegwitAddress;
-import com.io.wallet.utils.SpUtil;
-import com.io.wallet.utils.StringUtils;
-import com.lambdaworks.crypto.SCrypt;
+import com.io.wallet.utils.Strings;
+import com.orhanobut.hawk.Hawk;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,14 +39,15 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.io.wallet.crypto.ChainKd.generateDerivedScryptKey;
 import static com.io.wallet.utils.Constant.ACCOUNTKEYSPACE;
-import static com.io.wallet.utils.Constant.ACCOUNTS_JSON;
 import static com.io.wallet.utils.Constant.ADDRESS_JSON;
 import static com.io.wallet.utils.Constant.CIPHER;
 import static com.io.wallet.utils.Constant.CONTRACTPREFIX;
 import static com.io.wallet.utils.Constant.CURRENT_VERSION;
 import static com.io.wallet.utils.Constant.KEY_TYPE;
-import static com.io.wallet.utils.StringUtils.jsonToJsonObject;
+import static com.io.wallet.utils.Strings.generateRandomBytes;
+import static com.io.wallet.utils.Strings.jsonToJsonObject;
 
 /**
  * Created by hwj on 2018/8/24.
@@ -56,37 +55,53 @@ import static com.io.wallet.utils.StringUtils.jsonToJsonObject;
 
 public class Wallet {
 
-    public void initNativeAsset() {
-
-    }
-
+    /**
+     * creat key and save to file
+     *
+     * @param password
+     * @param keyPair
+     * @param n
+     * @param p
+     * @return
+     * @throws Exception
+     */
     public static String create(String password, Keys keyPair, int n, int p) throws Exception {
         byte[] salt = generateRandomBytes(32);
         byte[] derivedKey = generateDerivedScryptKey(
-                password.getBytes(Charset.forName("UTF-8")), salt, n, Constant.R, p, Constant.DKLEN);
+                password.getBytes(), salt, n, Constant.R, p, Constant.DKLEN);
         byte[] encryptKey = Arrays.copyOfRange(derivedKey, 0, 16);
         byte[] iv = generateRandomBytes(16);
         byte[] privateKeyBytes = keyPair.getXPrv();
         byte[] cipherText = performCipherOperation(
                 Cipher.ENCRYPT_MODE, iv, encryptKey, privateKeyBytes);
-        byte[] mac = generateMac(derivedKey, cipherText);
+        byte[] mac = ChainKd.generateMac(derivedKey, cipherText);
 
-        WalletFile wallet = getWallet(keyPair, cipherText, iv, salt, mac, n, p);
-        return Storage.getInstance().saveKey(wallet, StringUtils.keyFileName(keyPair.getID()));
+        EncryptedKey key = getEncryptedKey(keyPair, cipherText, iv, salt, mac, n, p);
+        return KeyCache.saveEncryptedKey(BytomWallet.PATH, key, Strings.keyFileName(keyPair.getID()));
     }
 
-    private static WalletFile getWallet(
+    /**
+     * encrypted key
+     *
+     * @param keys
+     * @param cipherText
+     * @param iv
+     * @param salt
+     * @param mac
+     * @param n
+     * @param p
+     * @return
+     */
+    private static EncryptedKey getEncryptedKey(
             Keys keys, byte[] cipherText, byte[] iv, byte[] salt, byte[] mac,
             int n, int p) {
-
-        WalletFile walletFile = new WalletFile();
+        EncryptedKey encryptedKey = new EncryptedKey();
 
         Crypto crypto = new Crypto();
         crypto.setCipher(Constant.CIPHER);
-        crypto.setCiphertext(StringUtils.byte2hex(cipherText));
-
+        crypto.setCiphertext(Strings.byte2hex(cipherText));
         Crypto.CipherParams cipherParams = new Crypto.CipherParams();
-        cipherParams.setIv(StringUtils.byte2hex(iv));
+        cipherParams.setIv(Strings.byte2hex(iv));
         crypto.setCipherparams(cipherParams);
         crypto.setKdf(Constant.SCRYPT);
 
@@ -95,19 +110,23 @@ public class Wallet {
         kdfParams.setP(p);
         kdfParams.setR(Constant.R);
         kdfParams.setDklen(Constant.DKLEN);
-        kdfParams.setSalt(StringUtils.toHexStringNoPrefix(salt));
+        kdfParams.setSalt(Strings.byte2hex(salt));
 
         crypto.setKdfparams(kdfParams);
-        crypto.setMac(StringUtils.toHexStringNoPrefix(mac));
+        crypto.setMac(Strings.byte2hex(mac));
 
-        walletFile.setCrypto(crypto);
-        walletFile.setId(UUID.randomUUID().toString());
-        walletFile.setType(keys.getKeyType());
-        walletFile.setVersion(CURRENT_VERSION);
-        walletFile.setAlias(keys.getAlias());
-        walletFile.setXpub(StringUtils.byte2hex(keys.getXPub()));
+        encryptedKey.setCrypto(crypto);
+        encryptedKey.setId(UUID.randomUUID().toString());
+        encryptedKey.setType(keys.getKeyType());
+        encryptedKey.setVersion(CURRENT_VERSION);
+        encryptedKey.setAlias(keys.getAlias());
+        encryptedKey.setXpub(Strings.byte2hex(keys.getXPub()));
 
-        return walletFile;
+        return encryptedKey;
+    }
+
+    public static String createLight(String password, Keys ecKeyPair) throws Exception {
+        return create(password, ecKeyPair, Constant.N_LIGHT, Constant.P_LIGHT);
     }
 
     public static String createStandard(String password, Keys ecKeyPair)
@@ -117,27 +136,27 @@ public class Wallet {
 
     public static Account creatAcount(List rootXPub, int quorum, String alias) throws Exception {
         String normalizedAlias = alias.trim().toLowerCase();
-        if (!TextUtils.isEmpty(SpUtil.getString("AccountAlias:" + normalizedAlias)))
-            throw new Exception("alias is exist");
-        int index = getNextAccountIndex();
+        if (AccountCache.hasAlias(alias)) {
+            throw new Exception("duplicate account alias");
+        }
+        int index = AccountCache.getNextAccountIndex();
         Account account = createSigners("account", rootXPub, quorum, index);
-        String id = idGenerate(index);
+        String id = ChainKd.idGenerate(index);
         account.setId(id);
         account.setAlias(normalizedAlias);
-        String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
-        JsonObject accountObj = jsonToJsonObject(accountStr);
-        accountObj.add(id, new Gson().toJsonTree(account).getAsJsonObject());
-        SpUtil.putString(ACCOUNTS_JSON, StringUtils.objectToJson(accountObj));
-        SpUtil.putString("AccountAlias:" + normalizedAlias, id);
+        AccountCache.addAccount(account);
         return account;
     }
 
     public static CtrlProgram createAddress(String accountId, String accountAlias) throws Exception {
-        String id = SpUtil.getString("AccountAlias:" + accountAlias.trim().toLowerCase(), "");
-        if (TextUtils.isEmpty(id)) throw new Exception("alias is not exist");
-        String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
-        JsonObject accountObj = jsonToJsonObject(accountStr);
-        Account curAccount = new Gson().fromJson(StringUtils.objectToJson(accountObj.get(id)), Account.class);
+        if (TextUtils.isEmpty(accountAlias)) {
+            throw new Exception("alias is error");
+        }
+        String id = AccountCache.getAccoutnId(accountAlias);
+        if (!TextUtils.isEmpty(id)) {
+            accountId = id;
+        }
+        Account curAccount = AccountCache.getAccountById(accountId);
         if (null == curAccount) throw new Exception("alias is not exist");
         CtrlProgram cp;
         if (1 == curAccount.getXpubs().size()) {
@@ -150,17 +169,17 @@ public class Wallet {
     }
 
     private static void insertControlPrograms(String id, CtrlProgram cp) {
-        String addressStr = SpUtil.getString(ADDRESS_JSON + id, "");
+        String addressStr = Hawk.get(ADDRESS_JSON + id, "");
         JsonObject addressObj = jsonToJsonObject(addressStr);
-        String hash = StringUtils.hashToString(Hash.sha3(cp.getControlProgram()));
+        String hash = Strings.byte2hex(Hash.sha3(cp.getControlProgram()));
         addressObj.add(CONTRACTPREFIX + hash, new Gson().toJsonTree(cp).getAsJsonObject());
-        SpUtil.putString(ADDRESS_JSON + id, StringUtils.objectToJson(addressObj));
+        Hawk.put(ADDRESS_JSON + id, Strings.objectToJson(addressObj));
     }
 
     private static CtrlProgram createP2PKH(Account account, boolean change) throws Exception {
         int idx = getNextContractIndex(account.getId());
         ArrayList<byte[]> derivedXPubs = getPath(account, ACCOUNTKEYSPACE, idx);
-        byte[] pubHash = StringUtils.sha256hash160(derivedXPubs.get(0));
+        byte[] pubHash = HDUtils.sha256hash160(derivedXPubs.get(0));
         checkArgument(pubHash.length == 20, "witness program must be 20 bytes for p2wpkh");
         String address = SegwitAddress.encode(Constant.BECH32HRPSEGWI.getBytes(), Constant.WITNESSVERSION, pubHash);
         byte[] control = new ScriptBuilder().data(pubHash).smallNum(0).build().getProgram();
@@ -171,7 +190,7 @@ public class Wallet {
         int idx = getNextContractIndex(account.getId());
         ArrayList<byte[]> derivedXPubs = getPath(account, ACCOUNTKEYSPACE, idx);
         byte[] signScript = ScriptBuilder.createMultiSigOutputScript(account.getQuorum(), derivedXPubs).getProgram();
-        byte[] scriptHash = StringUtils.sha256hash160(signScript);
+        byte[] scriptHash = HDUtils.sha256hash160(signScript);
         checkArgument(scriptHash.length == 32, "witness program must be 32 bytes for p2wsh");
         String address = SegwitAddress.encode(Base64.decode(Constant.BECH32HRPSEGWI), Constant.WITNESSVERSION, scriptHash);
         byte[] control = new ScriptBuilder().data(scriptHash).smallNum(0).build().getProgram();
@@ -192,52 +211,24 @@ public class Wallet {
         return path;
     }
 
-    public static List listAccounts() {
-        List accounts = new ArrayList();
-        String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
-        JsonObject accountObj = jsonToJsonObject(accountStr);
-        Iterator it = accountObj.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry entry = (Map.Entry) it.next();
-            accounts.add(entry.getValue());
-        }
-        return accounts;
-    }
-
     public static List listAddress(String accountID, String accountAlias) throws Exception {
         List address = new ArrayList();
-        Account target = null;
-        if (TextUtils.isEmpty(accountID)) {
-            SpUtil.getString("AccountAlias:" + accountAlias.trim().toLowerCase(), "");
-        }
-        if (!TextUtils.isEmpty(accountID)) {
-            String accountStr = SpUtil.getString(ACCOUNTS_JSON, "");
-            JsonObject accountObj = jsonToJsonObject(accountStr);
-            Iterator it = accountObj.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry entry = (Map.Entry) it.next();
-                if (entry.getKey().equals(accountID)) {
-                    target = Account.getAccount(StringUtils.objectToJson(entry.getValue()));
-                }
-
-            }
-        }
-        if (TextUtils.isEmpty(accountID) || null == target) {
+        Account target = AccountCache.getAccountById(accountID);
+        if (null == target) {
             throw new Exception("accountID is Invalid");
         }
-        String addressStr = SpUtil.getString(ADDRESS_JSON + accountID, "");
+        String addressStr = Hawk.get(ADDRESS_JSON + accountID, "");
         JsonObject addressObj = jsonToJsonObject(addressStr);
         Iterator it = addressObj.entrySet().iterator();
-
         while (it.hasNext()) {
             AddressResp resp = new AddressResp();
             Map.Entry entry = (Map.Entry) it.next();
             JsonObject object = (JsonObject) entry.getValue();
-            CtrlProgram cp = new Gson().fromJson(StringUtils.objectToJson(object), CtrlProgram.class);
+            CtrlProgram cp = new Gson().fromJson(Strings.objectToJson(object), CtrlProgram.class);
             resp.account_alias = accountAlias;
             resp.account_id = accountID;
             resp.address = cp.getAddress();
-            resp.control_program = StringUtils.byte2hex(cp.getControlProgram());
+            resp.control_program = Strings.byte2hex(cp.getControlProgram());
             resp.change = cp.isChange();
             resp.keyIndex = cp.getKeyIndex();
             address.add(resp);
@@ -247,7 +238,7 @@ public class Wallet {
 
     private static Account createSigners(String signerType, List xpubs, int quorum, int accountIndex) throws Exception {
         if (null == xpubs || xpubs.size() == 0) {
-            throw new Exception("xpubs is empty");
+            throw new Exception("at least one xpub is required");
         }
 
         Collections.sort(xpubs);
@@ -258,7 +249,7 @@ public class Wallet {
         }
 
         if (0 == quorum || quorum > xpubs.size()) {
-            throw new Exception("quorum is error");
+            throw new Exception("quorum must be greater than 1 and less than or equal to the length of xpubs");
         }
         Account account = new Account();
         account.setType(signerType);
@@ -268,49 +259,17 @@ public class Wallet {
         return account;
     }
 
-    private static String idGenerate(int index) {
-        long ourEpochMS = 1496635208000L;
-        Long n;
-        long nowMs = (long) (System.nanoTime() / 1e6);
-        long seqId = index % 1024;
-        long shareId = 5;
-        n = (nowMs - ourEpochMS) << 23;
-        n = n | (shareId << 10);
-        n = n | seqId;
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.putLong(0, n);
-        return Base32.encode(buffer.array());
-    }
-
-    private static int getNextAccountIndex() {
-        int nextIndex = SpUtil.getInt("AccountIndex", 1);
-        SpUtil.putInt("AccountIndex", nextIndex + 1);
-        return nextIndex;
-    }
-
     private static int getNextContractIndex(String accountID) {
-        int nextIndex = SpUtil.getInt("ContractIndex" + accountID, 1);
-        SpUtil.putInt("ContractIndex" + accountID, nextIndex + 1);
+        int nextIndex = Hawk.get("ContractIndex" + accountID, 1);
+        Hawk.put("ContractIndex" + accountID, nextIndex + 1);
         return nextIndex;
     }
 
-    public static String createLight(String password, Keys ecKeyPair) throws Exception {
-        return create(password, ecKeyPair, Constant.N_LIGHT, Constant.P_LIGHT);
-    }
 
     public static WalletImage backup() {
-        KeyImages keyImages = new KeyImages(Storage.getWallet());
-        AccountImage accountImage = new AccountImage(listAccounts());
+        KeyImages keyImages = new KeyImages(KeyCache.getAllEncryptedKey());
+        AccountImage accountImage = new AccountImage(AccountCache.getAllAccount());
         return new WalletImage(accountImage, new AssetImage(), keyImages);
-    }
-
-    private static byte[] generateDerivedScryptKey(
-            byte[] password, byte[] salt, int n, int r, int p, int dkLen) throws Exception {
-        try {
-            return SCrypt.scrypt(password, salt, n, r, p, dkLen);
-        } catch (GeneralSecurityException e) {
-            throw new Exception(e);
-        }
     }
 
     private static byte[] performCipherOperation(
@@ -323,25 +282,9 @@ public class Wallet {
         return cipher.doFinal(text);
     }
 
-    private static byte[] generateMac(byte[] derivedKey, byte[] cipherText) {
-        byte[] result = new byte[16 + cipherText.length];
-
-        System.arraycopy(derivedKey, 16, result, 0, 16);
-        System.arraycopy(cipherText, 0, result, 16, cipherText.length);
-
-        return Hash.sha3(result);
-    }
-
-    static byte[] generateRandomBytes(int size) {
-        byte[] bytes = new byte[size];
-        SecureRandom random = new SecureRandom();
-        random.nextBytes(bytes);
-        return bytes;
-    }
-
     public byte[] xSign(byte[] xpub, byte[][] path, byte[] msg, String auth) throws Exception {
-        List<WalletFile> walletFiles = Storage.getWallet();
-        WalletFile wallet = null;
+        List<EncryptedKey> walletFiles = KeyCache.getAllEncryptedKey();
+        EncryptedKey wallet = null;
         for (int i = 0; i < walletFiles.size(); i++) {
             if (walletFiles.get(i).getXpub().equals(xpub)) {
                 wallet = walletFiles.get(i);
@@ -350,13 +293,13 @@ public class Wallet {
         if (null == wallet) throw new Exception("xpub is not exis");
         Keys keys = decryptKey(wallet, auth);
         byte[] xprv = keys.getXPrv();
-        if(path.length>0){
-            xprv =  ExpandedPrivateKey.ExpandedPrivateKey(NonHardenedChild.child(xprv, path));
+        if (path.length > 0) {
+//            xprv =  ExpandedPrivateKey.ExpandedPrivateKey(NonHardenedChild.child(xprv, path));
         }
         return Signer.Ed25519InnerSign(xprv, msg);
     }
 
-    public static Keys decryptKey(WalletFile keyProtected, String auth) throws Exception {
+    public static Keys decryptKey(EncryptedKey keyProtected, String auth) throws Exception {
         if (CURRENT_VERSION != keyProtected.getVersion()) {
             throw new Exception("Version not supported:" + keyProtected.getVersion());
         }
@@ -367,7 +310,7 @@ public class Wallet {
             throw new Exception("Cipher not supported:" + keyProtected.getCrypto().getCipher());
         }
         byte[] derivedKey = getKDFKey(keyProtected.getCrypto(), auth);
-        byte[] calculatedMAC = generateMac(derivedKey, keyProtected.getCrypto().getCiphertext().getBytes());
+        byte[] calculatedMAC = ChainKd.generateMac(derivedKey, keyProtected.getCrypto().getCiphertext().getBytes());
         if (!keyProtected.getCrypto().getMac().equals(calculatedMAC)) {
             throw new Exception("MAC is error");
         }
@@ -390,7 +333,6 @@ public class Wallet {
         } else if ("pbkdf2".equals(cryptoJSON.getKdf())) {
 
         }
-        System.out.println("Unsupported KDF");
-        return null;
+        throw new Exception("Unsupported KDF");
     }
 }

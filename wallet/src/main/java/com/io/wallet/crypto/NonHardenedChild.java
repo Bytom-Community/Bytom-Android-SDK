@@ -76,7 +76,7 @@ public class NonHardenedChild {
         };
         byte[] res = xprv;
         for (int i = 0; i < hpaths.length; i++) {
-            byte[] xpub = DeriveXpub.deriveXpub(res);
+            byte[] xpub = ChainKd.deriveXpub(res);
             res = NonHardenedChild.NHchild(paths[i], res, xpub);
         }
         return res;

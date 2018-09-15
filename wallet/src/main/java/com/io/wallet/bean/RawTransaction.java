@@ -1,6 +1,6 @@
 package com.io.wallet.bean;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 import org.bouncycastle.jcajce.provider.digest.SHA3;
 
@@ -42,17 +42,17 @@ public class RawTransaction {
 
 
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 
     public static RawTransaction fromJson(String json) {
-        return StringUtils.serializer.fromJson(json, RawTransaction.class);
+        return Strings.serializer.fromJson(json, RawTransaction.class);
     }
 
     public static RawTransaction fromSuccessRespon(String json) {
         Type responType = new ParameterizedTypeImpl(Respon.class, new Class[]{RawTransaction.class});
-        Respon<RawTransaction> result = StringUtils.serializer.fromJson(json, responType);
-        return result.data;
+        Respon<RawTransaction> result = Strings.serializer.fromJson(json, responType);
+        return result.getData();
     }
 
     public static class AnnotatedInput {
@@ -97,7 +97,7 @@ public class RawTransaction {
 
         @Override
         public String toString() {
-            return StringUtils.serializer.toJson(this);
+            return Strings.serializer.toJson(this);
         }
 
     }

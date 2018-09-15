@@ -1,6 +1,6 @@
 package com.io.wallet.bean;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 public class Respon<T> {
     private String status;
@@ -28,7 +28,7 @@ public class Respon<T> {
     }
 
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 
 }

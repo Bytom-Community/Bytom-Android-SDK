@@ -11,7 +11,7 @@ public class FindDst {
         // 多签情况下，找到xpub对应的private key的下标 dst
         int dst = -1;
         for (int k = 0; k < privateKeys.length; k++) {
-            byte[] tempXpub = DeriveXpub.deriveXpub(Hex.decode(privateKeys[k]));
+            byte[] tempXpub = ChainKd.deriveXpub(Hex.decode(privateKeys[k]));
             if (xpub.equals(Hex.toHexString(tempXpub))) {
                 dst = k;
                 Log.d("private[dst]: ", privateKeys[dst]);

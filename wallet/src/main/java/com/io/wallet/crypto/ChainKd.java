@@ -1,7 +1,11 @@
 package com.io.wallet.crypto;
 
 import com.io.wallet.utils.HDUtils;
+import com.io.wallet.utils.Strings;
+import com.lambdaworks.crypto.SCrypt;
 
+import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -16,10 +20,7 @@ public class ChainKd {
      * @return
      */
     public static byte[] rootXPrv() {
-        Random randomno = new Random();
-        byte[] nbyte = new byte[32];
-        randomno.nextBytes(nbyte);
-        byte[] keys = HDUtils.hmacSha512(new byte[]{'R', 'o', 'o', 't'}, nbyte);
+        byte[] keys = HDUtils.hmacSha512(new byte[]{'R', 'o', 'o', 't'}, Strings.generateRandomBytes(32));
         byte[] pri = pruneRootScalar(Arrays.copyOfRange(keys, 0, 32));
         System.arraycopy(pri, 0, keys, 0, 32);
         return keys;
@@ -54,6 +55,60 @@ public class ChainKd {
         key[31] &= 31;
         key[31] |= 64;
         return key;
+    }
+
+    /**
+     * generate derived ScryptKey
+     *
+     * @param password
+     * @param salt
+     * @param n
+     * @param r
+     * @param p
+     * @param dkLen
+     * @return
+     * @throws Exception
+     */
+    public static byte[] generateDerivedScryptKey(
+            byte[] password, byte[] salt, int n, int r, int p, int dkLen) throws Exception {
+        try {
+            return SCrypt.scrypt(password, salt, n, r, p, dkLen);
+        } catch (GeneralSecurityException e) {
+            throw new Exception(e);
+        }
+    }
+
+    /**
+     * generate id by index
+     *
+     * @param index
+     * @return
+     */
+    public static String idGenerate(int index) {
+        long ourEpochMS = 1496635208000L;
+        Long n;
+        long nowMs = (long) (System.nanoTime() / 1e6);
+        long seqId = index % 1024;
+        long shareId = 5;
+        n = (nowMs - ourEpochMS) << 23;
+        n = n | (shareId << 10);
+        n = n | seqId;
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.putLong(0, n);
+        return Base32.encode(buffer.array());
+    }
+
+    /**
+     * generate mac
+     * @param derivedKey
+     * @param cipherText
+     * @return
+     */
+    public static byte[] generateMac(byte[] derivedKey, byte[] cipherText) {
+        byte[] result = new byte[16 + cipherText.length];
+        System.arraycopy(derivedKey, 16, result, 0, 16);
+        System.arraycopy(cipherText, 0, result, 16, cipherText.length);
+        return Hash.sha3(result);
     }
 
 }

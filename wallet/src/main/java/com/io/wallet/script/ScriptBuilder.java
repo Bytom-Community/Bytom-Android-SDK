@@ -18,7 +18,8 @@ package com.io.wallet.script;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.HDUtils;
+import com.io.wallet.utils.Strings;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -170,7 +171,7 @@ public class ScriptBuilder {
      * Creates a scriptPubKey for the given redeem script.
      */
     public static Script createP2SHOutputScript(Script redeemScript) {
-        byte[] hash = StringUtils.sha256hash160(redeemScript.getProgram());
+        byte[] hash = HDUtils.sha256hash160(redeemScript.getProgram());
         return ScriptBuilder.createP2SHOutputScript(hash);
     }
 

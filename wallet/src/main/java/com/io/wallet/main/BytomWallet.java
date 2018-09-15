@@ -1,24 +1,26 @@
 package com.io.wallet.main;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.io.wallet.bean.Account;
 import com.io.wallet.bean.CtrlProgram;
-import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.RawTransaction;
 import com.io.wallet.bean.Respon;
 import com.io.wallet.bean.Template;
-import com.io.wallet.bean.Xpub;
+import com.io.wallet.blockchain.account.AccountCache;
+import com.io.wallet.blockchain.keys.KeyCache;
+import com.io.wallet.blockchain.keys.Keys;
+import com.io.wallet.blockchain.keys.Xpub;
 import com.io.wallet.crypto.ChainKd;
 import com.io.wallet.crypto.Wallet;
 import com.io.wallet.utils.Constant;
 import com.io.wallet.utils.Signatures;
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 import com.orhanobut.hawk.Hawk;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static com.io.wallet.utils.Constant.KEY_TYPE;
 
@@ -28,9 +30,10 @@ import static com.io.wallet.utils.Constant.KEY_TYPE;
  */
 
 public class BytomWallet {
+    public static String PATH;
 
-    public static void initWallet(Context context, String storagePath) {
-        Storage.getInstance().init(context, storagePath);
+    public static void initWallet(Context context) {
+        PATH = context.getFilesDir().getAbsolutePath();
         Hawk.init(context).build();
     }
 
@@ -42,16 +45,19 @@ public class BytomWallet {
      * @return
      */
     public static String createKey(String alias, String password) {
-        if (Storage.hasXpubAlias(alias)) {
-            return new Respon(Constant.FAIL, "alias exist").toJson();
+        if (TextUtils.isEmpty(alias) || TextUtils.isEmpty(password)) {
+            return new Respon(Constant.FAIL, "invalid alias or password").toJson();
+        }
+        if (KeyCache.hasAlias(alias)) {
+            return new Respon(Constant.FAIL, "duplicate key alias").toJson();
         }
         byte[] priKey = ChainKd.rootXPrv();
         byte[] pubKey = ChainKd.deriveXpub(priKey);
-        Keys keys = new Keys(StringUtils.getUUID32(), alias, pubKey, KEY_TYPE, priKey);
+        Keys keys = new Keys(Strings.getUUID32(), alias, pubKey, KEY_TYPE, priKey);
         Xpub xpub;
         try {
-            xpub = new Xpub(StringUtils.byte2hex(pubKey), alias, Wallet.createLight(password, keys));
-            Storage.addXpubCache(xpub);
+            xpub = new Xpub(Strings.byte2hex(pubKey), alias, Wallet.createLight(password, keys));
+            KeyCache.addXpu(xpub);
         } catch (Exception e) {
             e.printStackTrace();
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
@@ -65,14 +71,7 @@ public class BytomWallet {
      * @return
      */
     public static String listKeys() {
-        List keys;
-        try {
-            keys = Storage.getInstance().loadKeys();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new Respon(Constant.FAIL, e.getMessage()).toJson();
-        }
-        return new Respon(Constant.SUCCESS, keys).toJson();
+        return new Respon(Constant.SUCCESS, KeyCache.getAllXpub()).toJson();
     }
 
     /**
@@ -86,7 +85,7 @@ public class BytomWallet {
     public static String createAccount(String alias, int quorum, String rootXPub) {
         Account account;
         try {
-            account = Wallet.creatAcount(new ArrayList(Arrays.asList(StringUtils.getUnmarshalText(rootXPub))), quorum, alias);
+            account = Wallet.creatAcount(new ArrayList(Arrays.asList(Strings.getUnmarshalText(rootXPub))), quorum, alias);
         } catch (Exception e) {
             e.printStackTrace();
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
@@ -100,7 +99,7 @@ public class BytomWallet {
      * @return
      */
     public static String listAccounts() {
-        return new Respon(Constant.SUCCESS, Wallet.listAccounts()).toJson();
+        return new Respon(Constant.SUCCESS, AccountCache.getAllAccount()).toJson();
     }
 
     /**
@@ -143,7 +142,7 @@ public class BytomWallet {
      *
      * @return
      */
-    public static String backupWalletImage() {
+    public static String backupWallet() {
         return new Respon(Constant.SUCCESS, Wallet.backup()).toJson();
     }
 

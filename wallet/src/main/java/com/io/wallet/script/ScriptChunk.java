@@ -16,7 +16,7 @@
 
 package com.io.wallet.script;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -124,7 +124,7 @@ public class ScriptChunk {
             } else if (opcode == OP_PUSHDATA4) {
                 checkState(data.length <= Script.MAX_SCRIPT_ELEMENT_SIZE);
                 stream.write(OP_PUSHDATA4);
-                StringUtils.uint32ToByteStreamLE(data.length, stream);
+                Strings.uint32ToByteStreamLE(data.length, stream);
             } else {
                 throw new RuntimeException("Unimplemented");
             }
@@ -143,7 +143,7 @@ public class ScriptChunk {
             // Data chunk
             buf.append(getPushDataName(opcode));
             buf.append("[");
-            buf.append(StringUtils.bytesToHexString(data));
+            buf.append(Strings.byte2hex(data));
             buf.append("]");
         } else {
             // Small num

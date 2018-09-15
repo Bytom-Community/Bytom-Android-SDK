@@ -1,6 +1,6 @@
 package com.io.wallet.crypto;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 import org.spongycastle.jcajce.provider.digest.Keccak;
 
@@ -18,9 +18,9 @@ public class Hash {
      * @return hash value as hex encoded string
      */
     public static String sha3(String hexInput) {
-        byte[] bytes = StringUtils.hexStringToByteArray(hexInput);
+        byte[] bytes = Strings.hex2Bytes(hexInput);
         byte[] result = sha3(bytes);
-        return StringUtils.toHexString(result);
+        return Strings.byte2hex(result);
     }
 
     /**

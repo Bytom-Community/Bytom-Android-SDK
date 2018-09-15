@@ -1,8 +1,7 @@
 package com.io.wallet.bean;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Account {
@@ -64,10 +63,10 @@ public class Account {
     }
 
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 
     public static Account getAccount(String account) {
-        return StringUtils.serializer.fromJson(account, Account.class);
+        return Strings.serializer.fromJson(account, Account.class);
     }
 }

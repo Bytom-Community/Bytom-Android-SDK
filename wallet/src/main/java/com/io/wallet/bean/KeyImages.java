@@ -1,15 +1,15 @@
 package com.io.wallet.bean;
 
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Created by hwj on 2018/9/13.
  */
 
 public class KeyImages {
-    public List<WalletFile> xkeys;
+    public ArrayList<EncryptedKey> xkeys;
 
-    public KeyImages(List<WalletFile> xkeys) {
+    public KeyImages(ArrayList<EncryptedKey> xkeys) {
         this.xkeys = xkeys;
     }
 }

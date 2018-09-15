@@ -4,7 +4,7 @@ import android.util.Log;
 
 import com.io.wallet.bean.RawTransaction;
 import com.io.wallet.bean.Template;
-import com.io.wallet.crypto.DeriveXpub;
+import com.io.wallet.crypto.ChainKd;
 import com.io.wallet.crypto.ExpandedPrivateKey;
 import com.io.wallet.crypto.FindDst;
 import com.io.wallet.crypto.NonHardenedChild;
@@ -45,15 +45,15 @@ public class Signatures {
                                     String[] hpaths = wc.keys[j].derivationPath;
                                     byte[] childXprv = NonHardenedChild.child(privateKey, hpaths);
                                     // 一级私钥推出公钥
-                                    byte[] xpub = DeriveXpub.deriveXpub(privateKey);
+                                    byte[] xpub = ChainKd.deriveXpub(privateKey);
                                     // 二级私钥得到扩展私钥
                                     byte[] expandedPrv = ExpandedPrivateKey.ExpandedPrivateKey(childXprv);
-                                    Log.d("privateKey: ", StringUtils.toHexString(privateKey));
-                                    Log.d("childXpriv: ", StringUtils.toHexString(childXprv));
-                                    Log.d("xpub: ", StringUtils.toHexString(xpub));
-                                    Log.d("message: ", StringUtils.toHexString(message));
+                                    Log.d("privateKey: ", Strings.byte2hex(privateKey));
+                                    Log.d("childXpriv: ", Strings.byte2hex(childXprv));
+                                    Log.d("xpub: ", Strings.byte2hex(xpub));
+                                    Log.d("message: ", Strings.byte2hex(message));
                                     sig = Signer.Ed25519InnerSign(expandedPrv, message);
-                                    Log.d("sig google: ", StringUtils.toHexString(sig));
+                                    Log.d("sig google: ", Strings.byte2hex(sig));
 
                                 } catch (Exception e) {
                                     e.printStackTrace();

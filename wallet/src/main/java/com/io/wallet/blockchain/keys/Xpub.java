@@ -1,6 +1,6 @@
-package com.io.wallet.bean;
+package com.io.wallet.blockchain.keys;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 /**
  * Created by hwj on 2018/8/24.
@@ -42,10 +42,10 @@ public class Xpub {
     }
 
     public static Xpub getXpubObj(String xpub) {
-        return StringUtils.serializer.fromJson(xpub, Xpub.class);
+        return Strings.serializer.fromJson(xpub, Xpub.class);
     }
 
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 }

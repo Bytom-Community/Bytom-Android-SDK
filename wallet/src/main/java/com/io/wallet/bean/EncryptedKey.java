@@ -1,12 +1,12 @@
 package com.io.wallet.bean;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 /**
  * Created by hwj on 2018/8/24.
  */
 
-public class WalletFile {
+public class EncryptedKey {
     private Crypto crypto;
     private String id;
     private int version;
@@ -38,7 +38,7 @@ public class WalletFile {
         this.xpub = xpub;
     }
 
-    public WalletFile() {
+    public EncryptedKey() {
     }
 
     public Crypto getCrypto() {
@@ -65,11 +65,11 @@ public class WalletFile {
         this.version = version;
     }
 
-    public WalletFile getWalletFile(String wallet) {
-        return StringUtils.serializer.fromJson(wallet, WalletFile.class);
+    public EncryptedKey getWalletFile(String wallet) {
+        return Strings.serializer.fromJson(wallet, EncryptedKey.class);
     }
 
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 }

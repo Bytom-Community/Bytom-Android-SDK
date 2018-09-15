@@ -224,7 +224,7 @@ final class Field25519 {
     //
     // Each of these shifts and adds ends up multiplying the value by 19.
     //
-    // For output[0..8], the absolute entry value is < 14*2^54 and we add, at most, 19*14*2^54 thus,
+    // For output[0..8], the absolute entry value is < 14*2^54 and we addXpu, at most, 19*14*2^54 thus,
     // on exit, |output[0..8]| < 280*2^54.
     output[8] += output[18] << 4;
     output[8] += output[18] << 1;

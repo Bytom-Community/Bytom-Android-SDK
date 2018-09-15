@@ -1,6 +1,6 @@
 package com.io.wallet.bean;
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 public class CtrlProgram {
     private String accountId;
@@ -58,6 +58,6 @@ public class CtrlProgram {
     }
 
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 }

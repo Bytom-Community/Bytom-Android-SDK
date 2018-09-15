@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         String alias = "hwj15348";
-        BytomWallet.initWallet(getApplication(),this.getFilesDir().getAbsolutePath());
+        BytomWallet.initWallet(getApplication());
         String key = BytomWallet.createKey(alias, "123");
         Log.d(Tag+"-key", key);
         String list = BytomWallet.listKeys();

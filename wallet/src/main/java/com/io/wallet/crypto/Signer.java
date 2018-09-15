@@ -27,7 +27,7 @@ public class Signer {
         Ed25519.reduce(messageDigest);
         byte[] messageDigestReduced = Arrays.copyOfRange(messageDigest, 0, 32);
         byte[] encodedR = Ed25519.scalarMultWithBaseToBytes(messageDigestReduced);
-        byte[] publicKey = DeriveXpub.deriveXpub(privateKey);
+        byte[] publicKey = ChainKd.deriveXpub(privateKey);
 
         byte[] hramDigestData = new byte[32 + encodedR.length + message.length];
         int hramDigestIndex = 0;

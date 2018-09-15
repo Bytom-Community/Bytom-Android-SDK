@@ -1,7 +1,7 @@
 package com.io.wallet.script;
 
 import com.google.common.collect.Lists;
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -69,7 +69,7 @@ public class Script {
     // Used from ScriptBuilder.
     Script(List<ScriptChunk> chunks) {
         this.chunks = Collections.unmodifiableList(new ArrayList<ScriptChunk>(chunks));
-        creationTimeSeconds = StringUtils.currentTimeSeconds();
+        creationTimeSeconds = Strings.currentTimeSeconds();
     }
 
     /**
@@ -81,7 +81,7 @@ public class Script {
     public Script(byte[] programBytes) throws ScriptException {
         program = programBytes;
         parse(programBytes);
-        creationTimeSeconds = StringUtils.currentTimeSeconds();
+        creationTimeSeconds = Strings.currentTimeSeconds();
     }
 
     public Script(byte[] programBytes, long creationTimeSeconds) throws ScriptException {

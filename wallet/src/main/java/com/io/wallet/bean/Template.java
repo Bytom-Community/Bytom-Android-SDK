@@ -1,7 +1,7 @@
 package com.io.wallet.bean;
 
 
-import com.io.wallet.utils.StringUtils;
+import com.io.wallet.utils.Strings;
 
 import java.util.List;
 
@@ -116,11 +116,11 @@ public class Template {
      * @return the JSON-serialized representation of the Receiver object
      */
     public String toJson() {
-        return StringUtils.serializer.toJson(this);
+        return Strings.serializer.toJson(this);
     }
 
     public static Template fromJson(String json) {
-        return StringUtils.serializer.fromJson(json, Template.class);
+        return Strings.serializer.fromJson(json, Template.class);
     }
 
 }
