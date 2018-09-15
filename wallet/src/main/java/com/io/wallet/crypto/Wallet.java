@@ -6,12 +6,16 @@ import com.amazonaws.util.Base64;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.io.wallet.bean.Account;
+import com.io.wallet.bean.AccountImage;
 import com.io.wallet.bean.AddressResp;
+import com.io.wallet.bean.AssetImage;
 import com.io.wallet.bean.Crypto;
 import com.io.wallet.bean.CtrlProgram;
+import com.io.wallet.bean.KeyImages;
 import com.io.wallet.bean.Keys;
 import com.io.wallet.bean.ScryptKdfParams;
 import com.io.wallet.bean.WalletFile;
+import com.io.wallet.bean.WalletImage;
 import com.io.wallet.main.Storage;
 import com.io.wallet.script.ScriptBuilder;
 import com.io.wallet.utils.Constant;
@@ -40,7 +44,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.io.wallet.utils.Constant.ACCOUNTKEYSPACE;
 import static com.io.wallet.utils.Constant.ACCOUNTS_JSON;
 import static com.io.wallet.utils.Constant.ADDRESS_JSON;
+import static com.io.wallet.utils.Constant.CIPHER;
 import static com.io.wallet.utils.Constant.CONTRACTPREFIX;
+import static com.io.wallet.utils.Constant.CURRENT_VERSION;
+import static com.io.wallet.utils.Constant.KEY_TYPE;
 import static com.io.wallet.utils.StringUtils.jsonToJsonObject;
 
 /**
@@ -96,7 +103,7 @@ public class Wallet {
         walletFile.setCrypto(crypto);
         walletFile.setId(UUID.randomUUID().toString());
         walletFile.setType(keys.getKeyType());
-        walletFile.setVersion(Constant.CURRENT_VERSION);
+        walletFile.setVersion(CURRENT_VERSION);
         walletFile.setAlias(keys.getAlias());
         walletFile.setXpub(StringUtils.byte2hex(keys.getXPub()));
 
@@ -227,7 +234,7 @@ public class Wallet {
             Map.Entry entry = (Map.Entry) it.next();
             JsonObject object = (JsonObject) entry.getValue();
             CtrlProgram cp = new Gson().fromJson(StringUtils.objectToJson(object), CtrlProgram.class);
-            resp.account_alias  = accountAlias;
+            resp.account_alias = accountAlias;
             resp.account_id = accountID;
             resp.address = cp.getAddress();
             resp.control_program = StringUtils.byte2hex(cp.getControlProgram());
@@ -291,6 +298,12 @@ public class Wallet {
         return create(password, ecKeyPair, Constant.N_LIGHT, Constant.P_LIGHT);
     }
 
+    public static WalletImage backup() {
+        KeyImages keyImages = new KeyImages(Storage.getWallet());
+        AccountImage accountImage = new AccountImage(listAccounts());
+        return new WalletImage(accountImage, new AssetImage(), keyImages);
+    }
+
     private static byte[] generateDerivedScryptKey(
             byte[] password, byte[] salt, int n, int r, int p, int dkLen) throws Exception {
         try {
@@ -324,5 +337,60 @@ public class Wallet {
         SecureRandom random = new SecureRandom();
         random.nextBytes(bytes);
         return bytes;
+    }
+
+    public byte[] xSign(byte[] xpub, byte[][] path, byte[] msg, String auth) throws Exception {
+        List<WalletFile> walletFiles = Storage.getWallet();
+        WalletFile wallet = null;
+        for (int i = 0; i < walletFiles.size(); i++) {
+            if (walletFiles.get(i).getXpub().equals(xpub)) {
+                wallet = walletFiles.get(i);
+            }
+        }
+        if (null == wallet) throw new Exception("xpub is not exis");
+        Keys keys = decryptKey(wallet, auth);
+        byte[] xprv = keys.getXPrv();
+        if(path.length>0){
+            xprv =  ExpandedPrivateKey.ExpandedPrivateKey(NonHardenedChild.child(xprv, path));
+        }
+        return Signer.Ed25519InnerSign(xprv, msg);
+    }
+
+    public static Keys decryptKey(WalletFile keyProtected, String auth) throws Exception {
+        if (CURRENT_VERSION != keyProtected.getVersion()) {
+            throw new Exception("Version not supported:" + keyProtected.getVersion());
+        }
+        if (!KEY_TYPE.equals(keyProtected.getType())) {
+            throw new Exception("Key type not supported:" + keyProtected.getType());
+        }
+        if (!CIPHER.equals(keyProtected.getCrypto().getCipher())) {
+            throw new Exception("Cipher not supported:" + keyProtected.getCrypto().getCipher());
+        }
+        byte[] derivedKey = getKDFKey(keyProtected.getCrypto(), auth);
+        byte[] calculatedMAC = generateMac(derivedKey, keyProtected.getCrypto().getCiphertext().getBytes());
+        if (!keyProtected.getCrypto().getMac().equals(calculatedMAC)) {
+            throw new Exception("MAC is error");
+        }
+        byte[] encryptKey = Arrays.copyOfRange(derivedKey, 0, 16);
+        byte[] cipherText = keyProtected.getCrypto().getCiphertext().getBytes();
+        byte[] iv = keyProtected.getCrypto().getCipherparams().getIv().getBytes();
+        byte[] xprv = performCipherOperation(Cipher.ENCRYPT_MODE, iv, encryptKey, cipherText);
+        byte[] xpub = ChainKd.deriveXpub(xprv);
+        return new Keys(keyProtected.getId(), keyProtected.getAlias(), xpub, keyProtected.getType(), xprv);
+    }
+
+    public static byte[] getKDFKey(Crypto cryptoJSON, String auth) throws Exception {
+        ScryptKdfParams params = cryptoJSON.getKdfparams();
+        byte[] authArray = auth.getBytes();
+        byte[] salt = params.getSalt().getBytes();
+        int dkLen = params.getDklen();
+        if ("scrypt".equals(cryptoJSON.getKdf())) {
+            return generateDerivedScryptKey(
+                    authArray, salt, params.getN(), params.getR(), params.getP(), params.getP());
+        } else if ("pbkdf2".equals(cryptoJSON.getKdf())) {
+
+        }
+        System.out.println("Unsupported KDF");
+        return null;
     }
 }

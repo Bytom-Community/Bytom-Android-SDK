@@ -5,12 +5,16 @@ import android.content.Context;
 import com.io.wallet.bean.Account;
 import com.io.wallet.bean.CtrlProgram;
 import com.io.wallet.bean.Keys;
+import com.io.wallet.bean.RawTransaction;
 import com.io.wallet.bean.Respon;
+import com.io.wallet.bean.Template;
 import com.io.wallet.bean.Xpub;
 import com.io.wallet.crypto.ChainKd;
 import com.io.wallet.crypto.Wallet;
 import com.io.wallet.utils.Constant;
+import com.io.wallet.utils.Signatures;
 import com.io.wallet.utils.StringUtils;
+import com.orhanobut.hawk.Hawk;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +31,7 @@ public class BytomWallet {
 
     public static void initWallet(Context context, String storagePath) {
         Storage.getInstance().init(context, storagePath);
+        Hawk.init(context).build();
     }
 
     /**
@@ -37,7 +42,7 @@ public class BytomWallet {
      * @return
      */
     public static String createKey(String alias, String password) {
-        if (Storage.getInstance().hasKeyAlias(alias.trim().toLowerCase())) {
+        if (Storage.hasXpubAlias(alias)) {
             return new Respon(Constant.FAIL, "alias exist").toJson();
         }
         byte[] priKey = ChainKd.rootXPrv();
@@ -46,6 +51,7 @@ public class BytomWallet {
         Xpub xpub;
         try {
             xpub = new Xpub(StringUtils.byte2hex(pubKey), alias, Wallet.createLight(password, keys));
+            Storage.addXpubCache(xpub);
         } catch (Exception e) {
             e.printStackTrace();
             return new Respon(Constant.FAIL, e.getMessage()).toJson();
@@ -138,6 +144,19 @@ public class BytomWallet {
      * @return
      */
     public static String backupWalletImage() {
-        return "";
+        return new Respon(Constant.SUCCESS, Wallet.backup()).toJson();
+    }
+
+
+    /**
+     * sign transaction
+     *
+     * @param privateKeys
+     * @param template
+     * @param decodedTx
+     * @return
+     */
+    public String signTransaction(String[] privateKeys, Template template, RawTransaction decodedTx) {
+        return new Respon(Constant.SUCCESS, Signatures.generateSignatures(privateKeys, template, decodedTx)).toJson();
     }
 }

@@ -27,4 +27,6 @@ public class Constant {
     public static final byte ACCOUNTKEYSPACE = 1;
 
     public static final String CONTRACTPREFIX = "Contract:";
+
+    public static final String XPUBCACHE = "xpubCache";
 }

@@ -65,6 +65,21 @@ public class StringUtils {
         }
     }
 
+    public static byte[] sha256(byte[]... datas) {
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        for (byte[] data : datas) {
+            digest.update(data, 0, data.length);
+        }
+
+        return digest.digest();
+
+    }
+
     /**
      * Calculates the SHA-256 hash of the given byte range, and then hashes the resulting hash
      * again. This is

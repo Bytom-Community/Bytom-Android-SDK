@@ -11,7 +11,7 @@ public class Crypto {
     private CipherParams cipherparams;
 
     private String kdf;
-    private KdfParams kdfparams;
+    private ScryptKdfParams kdfparams;
 
     private String mac;
 
@@ -50,11 +50,11 @@ public class Crypto {
         this.kdf = kdf;
     }
 
-    public KdfParams getKdfparams() {
+    public ScryptKdfParams getKdfparams() {
         return kdfparams;
     }
 
-    public void setKdfparams(KdfParams kdfparams) {
+    public void setKdfparams(ScryptKdfParams kdfparams) {
         this.kdfparams = kdfparams;
     }
 

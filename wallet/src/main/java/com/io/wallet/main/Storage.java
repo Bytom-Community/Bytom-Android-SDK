@@ -11,6 +11,7 @@ import com.io.wallet.bean.WalletFile;
 import com.io.wallet.bean.Xpub;
 import com.io.wallet.utils.SpUtil;
 import com.io.wallet.utils.StoragePermission;
+import com.orhanobut.hawk.Hawk;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -26,9 +27,12 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.io.wallet.utils.Constant.XPUBCACHE;
+
 public class Storage {
 
-    private ArrayList<WalletFile> mapWallet = new ArrayList<>();
+    private static ArrayList<WalletFile> mapWallet = new ArrayList<>();
+    private static ArrayList<Xpub> xpubCache = new ArrayList<>();
     private static Storage instance;
     private String KEYS_PATH;
 
@@ -52,6 +56,26 @@ public class Storage {
             e.printStackTrace();
         }
         SpUtil.init(context);
+        xpubCache = Hawk.get(XPUBCACHE, new ArrayList<Xpub>());
+    }
+
+    public static void addXpubCache(Xpub xpub) {
+        xpubCache.add(xpub);
+        Hawk.put(XPUBCACHE, xpubCache);
+    }
+
+    public static boolean hasXpubAlias(String alias) {
+        if (TextUtils.isEmpty(alias)) return false;
+        for (Xpub item : xpubCache) {
+            if (item.getAlias().equals(alias.trim().toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static ArrayList<Xpub> getAllXpub() {
+        return xpubCache;
     }
 
     public synchronized boolean add(WalletFile wallet) {
@@ -75,7 +99,7 @@ public class Storage {
         return !TextUtils.isEmpty(curAlias.trim());
     }
 
-    public synchronized ArrayList<WalletFile> get() {
+    public static ArrayList<WalletFile> getWallet() {
         return mapWallet;
     }
 
