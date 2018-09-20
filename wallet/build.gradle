@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
 
     defaultConfig {
-        minSdkVersion 24
+        minSdkVersion 19
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -15,6 +15,11 @@ android {
 
     packagingOptions {
         pickFirst 'META-INF/*'
+    }
+
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
     }
 
     buildTypes {
@@ -29,7 +34,9 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.google.code.gson:gson:2.8.5'
-    implementation 'com.google.crypto.tink:tink:1.2.0'
+    implementation('com.google.crypto.tink:tink:1.2.0') {
+        exclude group: "com.google.guava", module: "guava"
+    }
     implementation 'com.lambdaworks:scrypt:1.4.0'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.55'
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
