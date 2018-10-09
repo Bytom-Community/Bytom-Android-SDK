@@ -31,7 +31,7 @@ public class Bech32 {
         return new String(ret);
     }
 
-    public Pair<byte[], byte[]> bech32Decode(String bech) throws Exception  {
+    public Pair<byte[], byte[]> bech32Decode(String bech) throws Exception {
         if(!bech.equals(bech.toLowerCase()) && !bech.equals(bech.toUpperCase()))  {
             throw new Exception("bech32 cannot mix upper and lower case");
         }

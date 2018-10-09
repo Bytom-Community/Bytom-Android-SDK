@@ -21,7 +21,7 @@ import static com.io.wallet.utils.Constant.extendedPublicKeySize;
 
 public class Strings {
     final protected static char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-    public static String rfc3339DateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
+    public static String rfc3339DateFormat = "yyyy-MM-dd'T'HH:mm:ss";
     public static final Gson serializer = new GsonBuilder().setDateFormat(rfc3339DateFormat).create();
 
     /**

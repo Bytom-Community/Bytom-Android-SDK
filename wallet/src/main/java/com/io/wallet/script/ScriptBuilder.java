@@ -19,7 +19,6 @@ package com.io.wallet.script;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import com.io.wallet.utils.HDUtils;
-import com.io.wallet.utils.Strings;
 
 import java.util.ArrayList;
 import java.util.Arrays;

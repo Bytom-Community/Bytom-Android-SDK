@@ -2,7 +2,7 @@ package com.io.wallet.crypto;
 
 import android.text.TextUtils;
 
-import com.amazonaws.util.Base64;
+import com.google.crypto.tink.subtle.Base64;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.io.wallet.bean.Account;
@@ -98,7 +98,7 @@ public class Wallet {
         EncryptedKey encryptedKey = new EncryptedKey();
 
         Crypto crypto = new Crypto();
-        crypto.setCipher(Constant.CIPHER);
+        crypto.setCipher(CIPHER);
         crypto.setCiphertext(Strings.byte2hex(cipherText));
         Crypto.CipherParams cipherParams = new Crypto.CipherParams();
         cipherParams.setIv(Strings.byte2hex(iv));
@@ -134,7 +134,7 @@ public class Wallet {
         return create(password, ecKeyPair, Constant.N_STANDARD, Constant.P_STANDARD, Strings.keyFileName(ecKeyPair.getID()));
     }
 
-    public static Account creatAcount(List rootXPub, int quorum, String alias) throws Exception {
+    public static Account createAccount(List rootXPub, int quorum, String alias) throws Exception {
         String normalizedAlias = alias.trim().toLowerCase();
         if (AccountCache.hasAlias(alias)) {
             throw new Exception("duplicate account alias");

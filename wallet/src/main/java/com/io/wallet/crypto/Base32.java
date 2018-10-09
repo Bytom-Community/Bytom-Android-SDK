@@ -1,9 +1,10 @@
 package com.io.wallet.crypto;
 
+import com.google.crypto.tink.subtle.Base64;
+
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Base64;
 
 public class Base32 extends Object {
     private static final String base32Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

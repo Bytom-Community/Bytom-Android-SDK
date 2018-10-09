@@ -18,6 +18,10 @@ package com.io.wallet.crypto;
 
 import com.google.crypto.tink.subtle.EngineFactory;
 
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.util.Arrays;
+
 import static com.io.wallet.crypto.Ed25519Constants.B2;
 import static com.io.wallet.crypto.Ed25519Constants.B_TABLE;
 import static com.io.wallet.crypto.Ed25519Constants.D;
@@ -25,10 +29,6 @@ import static com.io.wallet.crypto.Ed25519Constants.D2;
 import static com.io.wallet.crypto.Ed25519Constants.SQRTM1;
 import static com.io.wallet.crypto.Field25519.FIELD_LEN;
 import static com.io.wallet.crypto.Field25519.LIMB_CNT;
-
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.util.Arrays;
 
 /**
  * This implementation is based on the ed25519/ref10 implementation in NaCl.

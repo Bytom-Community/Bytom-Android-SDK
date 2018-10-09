@@ -44,7 +44,7 @@ public class SegwitAddress {
         return Pair.of(witnessVersion, decoded);
     }
 
-    public static String encode(byte[] hrp, byte witnessVersion, byte[] witnessProgram) throws Exception    {
+    public static String encode(byte[] hrp, byte witnessVersion, byte[] witnessProgram) throws Exception {
         byte[] prog = convertBits(Bytes.asList(witnessProgram), 8, 5, true);
         byte[] data = new byte[1 + prog.length];
 
@@ -65,7 +65,7 @@ public class SegwitAddress {
         return ret;
     }
 
-    private static byte[] convertBits(List<Byte> data, int fromBits, int toBits, boolean pad) throws Exception    {
+    private static byte[] convertBits(List<Byte> data, int fromBits, int toBits, boolean pad) throws Exception {
         int acc = 0;
         int bits = 0;
         int maxv = (1 << toBits) - 1;
