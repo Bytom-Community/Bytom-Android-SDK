@@ -1,15 +1,16 @@
 package com.io.wallet.bean;
 
-/**
- * Created by hwj on 2018/9/13.
- */
+import com.google.gson.annotations.SerializedName;
 
+/** Created by hwj on 2018/9/13. */
 public class ImageSlice {
-    public Account account;
-    public long contract_index;
+  public Account account;
 
-    public ImageSlice(Account account, long contract_index) {
-        this.account = account;
-        this.contract_index = contract_index;
-    }
+  @SerializedName("contractIndex")
+  public long contract_index;
+
+  public ImageSlice(Account account, long contract_index) {
+    this.account = account;
+    this.contract_index = contract_index;
+  }
 }
