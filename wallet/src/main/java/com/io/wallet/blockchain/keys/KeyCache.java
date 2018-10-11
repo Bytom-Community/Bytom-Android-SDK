@@ -94,7 +94,12 @@ public class KeyCache {
       if (hasAlias(key.getAlias())) {
         throw new Exception("duplicate key alias");
       }
-      saveEncryptedKey(key, Strings.keyFileName(key.getId()));
+      Xpub xpub =
+          new Xpub(
+              key.getAlias(),
+              key.getXpub(),
+              saveEncryptedKey(key, Strings.keyFileName(key.getId())));
+      KeyCache.addXpu(xpub);
     }
   }
 }

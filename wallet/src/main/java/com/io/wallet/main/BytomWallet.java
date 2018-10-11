@@ -3,8 +3,6 @@ package com.io.wallet.main;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.io.wallet.bean.Account;
 import com.io.wallet.bean.CtrlProgram;
 import com.io.wallet.bean.RawTransaction;
@@ -180,8 +178,7 @@ public class BytomWallet {
    */
   public static String restoreWallet(String walletImage) {
     try {
-      JsonObject object = new JsonParser().parse(walletImage).getAsJsonObject();
-      Wallet.restoreWalletImage(Strings.serializer.fromJson(object.get("data"), WalletImage.class));
+      Wallet.restoreWalletImage(Strings.serializer.fromJson(walletImage, WalletImage.class));
     } catch (Exception e) {
       return new Respon<>(Constant.FAIL, "Invalid image string").toJson();
     }
