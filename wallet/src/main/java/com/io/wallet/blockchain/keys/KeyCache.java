@@ -96,8 +96,8 @@ public class KeyCache {
       }
       Xpub xpub =
           new Xpub(
-              key.getAlias(),
               key.getXpub(),
+              key.getAlias(),
               saveEncryptedKey(key, Strings.keyFileName(key.getId())));
       KeyCache.addXpu(xpub);
     }
