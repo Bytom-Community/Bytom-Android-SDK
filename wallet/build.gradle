@@ -28,3 +28,5 @@ dependencies {
     implementation 'com.orhanobut:hawk:2.0.1'
     implementation 'com.google.guava:guava:26.0-android'
 }
+
+apply from: './bintray.gradle'
