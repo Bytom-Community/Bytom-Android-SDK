@@ -84,7 +84,7 @@ bintray {
     publish = true
 
     pkg {
-        repo = "bytom"
+        repo = "maven"
         name = PROJ_NAME
         desc = PROJ_DESCRIPTION
         websiteUrl = PROJ_WEBSITEURL

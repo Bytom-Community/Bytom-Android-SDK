@@ -43,14 +43,14 @@ public class BytomWallet {
    * @param password
    * @return
    */
-  public static String createKey(String alias, String password) {
+  public static Respon createKey(String alias, String password) {
     String normalizedAlias = alias.trim().toLowerCase();
     if (TextUtils.isEmpty(normalizedAlias) || TextUtils.isEmpty(password)) {
-      return new Respon<>(Constant.FAIL, "invalid alias or password").toJson();
+      return new Respon<>(Constant.FAIL, "invalid alias or password");
     }
 
     if (KeyCache.hasAlias(normalizedAlias)) {
-      return new Respon<>(Constant.FAIL, "duplicate key alias").toJson();
+      return new Respon<>(Constant.FAIL, "duplicate key alias");
     }
     byte[] priKey = ChainKd.rootXPrv();
     byte[] pubKey = ChainKd.deriveXpub(priKey);
@@ -64,9 +64,9 @@ public class BytomWallet {
               Wallet.createLight(password, keys, Strings.keyFileName(keys.getID())));
       KeyCache.addXpu(xpub);
     } catch (Exception e) {
-      return new Respon<>(Constant.FAIL, e.getMessage()).toJson();
+      return new Respon<>(Constant.FAIL, e.getMessage());
     }
-    return new Respon<>(Constant.SUCCESS, xpub).toJson();
+    return new Respon<>(Constant.SUCCESS, xpub);
   }
 
   /**
@@ -74,8 +74,8 @@ public class BytomWallet {
    *
    * @return
    */
-  public static String listKeys() {
-    return new Respon<>(Constant.SUCCESS, KeyCache.getAllXpub()).toJson();
+  public static Respon listKeys() {
+    return new Respon<>(Constant.SUCCESS, KeyCache.getAllXpub());
   }
 
   /**
@@ -86,16 +86,16 @@ public class BytomWallet {
    * @param rootXPub
    * @return
    */
-  public static String createAccount(String alias, int quorum, String rootXPub) {
+  public static Respon createAccount(String alias, int quorum, String rootXPub) {
     Account account;
     try {
       account =
           Wallet.createAccount(
               new ArrayList<>(Arrays.asList(Strings.getUnmarshalText(rootXPub))), quorum, alias);
     } catch (Exception e) {
-      return new Respon<>(Constant.FAIL, e.getMessage()).toJson();
+      return new Respon<>(Constant.FAIL, e.getMessage());
     }
-    return new Respon<>(Constant.SUCCESS, account).toJson();
+    return new Respon<>(Constant.SUCCESS, account);
   }
 
   /**
@@ -103,8 +103,8 @@ public class BytomWallet {
    *
    * @return
    */
-  public static String listAccounts() {
-    return new Respon<>(Constant.SUCCESS, AccountCache.getAllAccount()).toJson();
+  public static Respon listAccounts() {
+    return new Respon<>(Constant.SUCCESS, AccountCache.getAllAccount());
   }
 
   /**
@@ -114,19 +114,17 @@ public class BytomWallet {
    * @param accountAlias
    * @return
    */
-  public static String createAccountReceiver(String accountId, String accountAlias) {
+  public static Respon createAccountReceiver(String accountId, String accountAlias) {
     CtrlProgram ctrlProgram;
     try {
       ctrlProgram = Wallet.createAddress(accountId, accountAlias);
     } catch (Exception e) {
-      return new Respon<>(Constant.FAIL, e.getMessage()).toJson();
+      return new Respon<>(Constant.FAIL, e.getMessage());
     }
 
     return new Respon<>(
-            Constant.SUCCESS,
-            new Receiver(
-                Strings.byte2hex(ctrlProgram.getControlProgram()), ctrlProgram.getAddress()))
-        .toJson();
+        Constant.SUCCESS,
+        new Receiver(Strings.byte2hex(ctrlProgram.getControlProgram()), ctrlProgram.getAddress()));
   }
 
   /**
@@ -136,11 +134,11 @@ public class BytomWallet {
    * @param accountAlias
    * @return
    */
-  public static String listAddress(String accountID, String accountAlias) {
+  public static Respon listAddress(String accountID, String accountAlias) {
     try {
-      return new Respon<>(Constant.SUCCESS, Wallet.listAddress(accountID, accountAlias)).toJson();
+      return new Respon<>(Constant.SUCCESS, Wallet.listAddress(accountID, accountAlias));
     } catch (Exception e) {
-      return new Respon<>(Constant.FAIL, e.getMessage()).toJson();
+      return new Respon<>(Constant.FAIL, e.getMessage());
     }
   }
 
@@ -149,8 +147,8 @@ public class BytomWallet {
    *
    * @return
    */
-  public static String backupWallet() {
-    return new Respon<>(Constant.SUCCESS, Wallet.backup()).toJson();
+  public static Respon backupWallet() {
+    return new Respon<>(Constant.SUCCESS, Wallet.backup());
   }
 
   /**
@@ -161,12 +159,12 @@ public class BytomWallet {
    * @param newPassword
    * @return
    */
-  public static String resetKeyPassword(String rootXPub, String oldPassword, String newPassword) {
+  public static Respon resetKeyPassword(String rootXPub, String oldPassword, String newPassword) {
     try {
       Wallet.resetPassword(rootXPub, oldPassword, newPassword);
-      return new Respon<>(Constant.SUCCESS, new ResetPasswordResp(true)).toJson();
+      return new Respon<>(Constant.SUCCESS, new ResetPasswordResp(true));
     } catch (Exception e) {
-      return new Respon<>(Constant.FAIL, new ResetPasswordResp(false)).toJson();
+      return new Respon<>(Constant.FAIL, new ResetPasswordResp(false));
     }
   }
 
@@ -176,13 +174,13 @@ public class BytomWallet {
    * @param walletImage
    * @return
    */
-  public static String restoreWallet(String walletImage) {
+  public static Respon restoreWallet(String walletImage) {
     try {
       Wallet.restoreWalletImage(Strings.serializer.fromJson(walletImage, WalletImage.class));
     } catch (Exception e) {
-      return new Respon<>(Constant.FAIL, "Invalid image string").toJson();
+      return new Respon<>(Constant.FAIL, "Invalid image string");
     }
-    return new Respon<>(Constant.SUCCESS, "").toJson();
+    return new Respon<>(Constant.SUCCESS, "");
   }
 
   /**
@@ -193,9 +191,8 @@ public class BytomWallet {
    * @param decodedTx
    * @return
    */
-  public String signTransaction(String[] privateKeys, Template template, RawTransaction decodedTx) {
+  public Respon signTransaction(String[] privateKeys, Template template, RawTransaction decodedTx) {
     return new Respon<>(
-            Constant.SUCCESS, Signatures.generateSignatures(privateKeys, template, decodedTx))
-        .toJson();
+        Constant.SUCCESS, Signatures.generateSignatures(privateKeys, template, decodedTx));
   }
 }

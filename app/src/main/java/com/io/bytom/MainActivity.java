@@ -20,8 +20,8 @@ public class MainActivity extends AppCompatActivity {
     String alias = "hwj2";
     String key = BytomWallet.createKey(alias, "123");
     Log.d(Tag + "-key", key);
-    String list = BytomWallet.listKeys();
-    Log.d(Tag + "-listKey", list);
+    String lists = BytomWallet.listKeys();
+    Log.d(Tag + "-listKey", lists);
     String xpub = "";
     try {
       JSONObject keyObject = new JSONObject(key);
